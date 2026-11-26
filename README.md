@@ -1,51 +1,127 @@
-# BantayBarangay (Django templates + PostgreSQL)
+# BantayBarangay
 
-One Django service. Pages are server-rendered from `backend/templates/`; CSS, JS, logo and Leaflet live in `backend/static/`.
-Resident and Volunteer side: `/app/`. Official and Staff side: `/official/`. LGU analytics: `/lgu/`. Django admin (superuser only): `/django-admin/`. Health check: `/healthz`.
-The REST API under `/api/` is still there (not used by the pages); it can be removed later.
+**BantayBarangay** is a barangay-level community concern and incident reporting platform built with Django, Django Templates, Leaflet maps, and PostgreSQL/Supabase. It connects residents, community volunteers, barangay officials, assigned field staff, and LGU analysts through role-based dashboards and an auditable report resolution workflow.
 
-## Target users and current system behavior
+## Core Feature (Vertical Slice — Project Development 2)
 
-| Target user | Supported workflow | Access boundary |
+**Community Incident & Concern Reporting Management** works end to end across the database, Django forms/views, URL routes, and server-rendered templates:
+
+- **Create (`/app/new/`)**: Logged-in Residents and Volunteers submit a concern with category, title, description (minimum 20 characters), 1–3 JPG/PNG evidence photos (up to 5 MB each), optional landmark note, interactive Leaflet map pin / latitude & longitude coordinates, and optional anonymous suspicious-activity toggle (for Safety reports). Daily rate limit: 5 reports per user per 24 hours.
+- **Read (`/app/`, `/official/`, `/lgu/`, `/reports/<id>/`)**: Role-scoped dashboards with search, category/status/date filters, pagination, emergency prioritization, map preview, photo gallery, status timeline (`StatusHistory`), and official/community updates (`Comment`).
+- **Update (`/reports/<id>/edit/`, `/reports/<id>/transition/`, `/reports/<id>/comment/`, `/reports/<id>/rate/`)**:
+  - Reporters can edit their own `Pending` reports (fields, coordinates, add/remove photos while retaining at least 1 photo).
+  - Officials assign `Pending` reports to a barangay `Department` and active `Staff` member, update status transitions (`Pending → Assigned → In Progress → Resolved` or `Rejected` with mandatory reason comment), post official updates, and rate `Resolved` reports (1–5).
+  - Staff update status and post official updates on reports assigned to them.
+  - Volunteers post community coordination updates on active barangay reports.
+- **Delete (`/reports/<id>/delete/`)**: Reporters can permanently delete their own `Pending` reports (locked once assigned or processed).
+
+## Standard Features (Project Development 1)
+
+- **Account Registration (`/register/`)**: Public sign-up with password strength validation, barangay selection, data privacy consent, and forced `Resident` role.
+- **Login / Logout (`/login/`, `/logout/`)**: Email-based login with Argon2 password hashing, 5-attempt lockout protection, session timeout (30 min), and POST-only logout.
+- **Role-Based User Dashboards**: Automatic redirect on login to `/app/` (Resident/Volunteer), `/official/` (Official/Staff), or `/lgu/` (LGU analytics).
+- **User Profile (`/profile/`)**: Authenticated users can view their role and barangay and update their full name, email (with uniqueness validation), and contact number.
+
+## Target Users & Role-Based Access
+
+| Role | Dashboard Route | Core Feature Capabilities & Access Boundary |
 |---|---|---|
-| Barangay residents | Register, submit a concern with category, photo, and map location, follow its status, receive alerts, read the bulletin, and delete their own Pending reports. | Public registration creates Resident accounts only. Residents see their own reports; submissions are limited to five per day. |
-| Barangay officials | Review reports from their barangay, assign a department and an active Staff member, transition reports, comment, and post/delete bulletin items. | Official access is barangay-scoped. Reporter contact details are available to Officials. Emergency reports are highlighted and prioritized. |
-| Barangay staff | Work from an assigned-report queue, update the status of reports assigned to them, comment, and receive alerts. | Staff cannot view unassigned cases, assign reports, access reporter contact details, or manage announcements. |
-| Community leaders and volunteers | Submit reports, view local reports for community coordination, add community updates to active cases, receive alerts, and read the bulletin. | Volunteer updates do not change report status. Other reporters' identities are hidden. Volunteers cannot assign cases or manage announcements. |
-| Local Government Units (LGUs) | Review cross-barangay aggregate totals by status, category, and barangay. | LGU accounts do not receive report-level access, reporter identities, free text, photos, or precise locations. |
-| System administrators | Use Django Admin (`/django-admin/`) for trusted system-level user and record administration. | Superuser access is separate from the operational Official and Staff roles. Grant it only to trusted administrators. |
+| Resident | `/app/` | Create, view, edit, and delete own `Pending` reports; receive alerts; view bulletin & profile. Sees own reports only (max 5 submissions/day). |
+| Volunteer | `/app/` | Submit, edit/delete own `Pending` reports; view local barangay reports (other reporters anonymized); post community updates on active cases. |
+| Official | `/official/` | View all barangay reports & reporter contacts; assign Department + active Staff; transition status; post official updates; rate `Resolved` reports; manage bulletin announcements. |
+| Staff | `/official/` | View assigned-report queue only; transition assigned reports (`Assigned → In Progress → Resolved`); post official updates; receive assignment alerts. |
+| LGU | `/lgu/` | View cross-barangay aggregate totals by status, category, and barangay only (no report-level PII, photos, or exact coordinates). |
+| Superuser / Admin | `/django-admin/` | Full system-level administration via Django Admin. |
 
-## Run locally (Windows Command Prompt)
-From the project folder, run:
+## Local & PostgreSQL/Supabase Setup
 
-    setup.bat
-    run.bat
+### 1. Clone and create virtual environment
 
-Open http://127.0.0.1:8000. `run.bat` also runs migrations and creates the cache table each time it starts.
+```powershell
+git clone https://github.com/Rojemmarc/BantayBarangay-Gutierrez-Rojemmarc-G7.git
+cd BantayBarangay-Gutierrez-Rojemmarc-G7
+```
 
-To load demo data, stop the server and run:
+On Windows Command Prompt, you can run `setup.bat`, or manually via PowerShell:
 
-    cd backend
-    venv\Scripts\python.exe manage.py seed --demo
+```powershell
+cd backend
+py -3 -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
 
-Demo accounts use `DemoPass#2026x`; do not seed demo data in production.
+### 2. Configure environment variables (`.env`)
 
-To run tests from Command Prompt:
+Copy `backend/.env.example` to `.env` (in either the project root or `backend/` — `.env` is excluded by `.gitignore`) and configure your PostgreSQL/Supabase database connection string:
 
-    cd backend
-    venv\Scripts\python.exe manage.py test
+```env
+DEBUG=1
+SECRET_KEY=replace-with-a-long-random-secret
+ALLOWED_HOSTS=localhost,127.0.0.1
+DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres
+DB_SSL=1
+SSL_REDIRECT=0
+```
 
-PowerShell and macOS/Linux users can follow the equivalent virtual-environment steps manually: create and activate a Python 3 virtual environment, install `backend/requirements.txt`, set `DEBUG=1`, then run `python manage.py migrate`, `python manage.py createcachetable`, and `python manage.py runserver` from `backend/`.
+> If `DATABASE_URL` is omitted locally while `DEBUG=1`, Django falls back to `backend/db.sqlite3`.
 
-## Folder map
-    backend/templates/   base.html, home.html, new_report.html, detail.html, alerts.html, bulletin.html, legal.html,
-                         auth/ (login, register, forgot), partials/ (badge, card, empty, errors), registration/, 400/403/404/500.html
-    backend/static/      css/app.css, js/app.js, js/theme.js, img/, vendor/leaflet/
-    backend/core/        models.py (database + rules), web.py (page views), web_urls.py, serializers.py (validation reused), context.py
+### 3. Run migrations, cache table, and demo seed
 
-## Deploy on Render
-Create a Render Web Service using the repository's `Dockerfile` and attach a PostgreSQL database. Set `DEBUG=0`, a strong generated `SECRET_KEY`, the database connection string as `DATABASE_URL`, `DB_SSL=1`, and `SSL_REDIRECT=1`. Render's `RENDER_EXTERNAL_HOSTNAME` is used automatically for Django's allowed host and CSRF origin; set `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` explicitly only if you use a custom domain. Docker build no longer needs Node. The container start command runs migrations, then Gunicorn.
+```powershell
+cd backend
+.\venv\Scripts\python.exe manage.py migrate
+.\venv\Scripts\python.exe manage.py createcachetable
+.\venv\Scripts\python.exe manage.py seed --demo
+```
 
-Configure persistent storage mounted at `/data` for uploads; `MEDIA_ROOT=/data/media` is already set in the production example. Configure SMTP environment variables to send password-reset emails; otherwise Django uses its console email backend.
-Rollback: Render → Deploys → redeploy an earlier commit; for database changes see `python manage.py migrate core <migration>`.
-Back up first from Command Prompt: `pg_dump -Fc "%DATABASE_URL%" > backup.dump` (PowerShell: `pg_dump -Fc "$env:DATABASE_URL" > backup.dump`).
+### 4. Start the development server
+
+```powershell
+.\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+```
+
+Open `http://127.0.0.1:8000` (or run `run.bat` from the repository root).
+
+### Demo Test Accounts (created by `manage.py seed --demo`)
+
+All demo accounts belong to **Tisa, Cebu City** and use password **`DemoPass#2026x`** (never run `--demo` in production):
+
+| Role | Email | Password |
+|---|---|---|
+| Resident | `resident@demo.ph` | `DemoPass#2026x` |
+| Volunteer | `volunteer@demo.ph` | `DemoPass#2026x` |
+| Official | `official@demo.ph` | `DemoPass#2026x` |
+| Staff | `staff@demo.ph` | `DemoPass#2026x` |
+| LGU | `lgu@demo.ph` | `DemoPass#2026x` |
+
+### 5. Run automated tests
+
+```powershell
+cd backend
+$env:DEBUG="1"
+.\venv\Scripts\python.exe manage.py test
+```
+
+## Key Project Structure
+
+```text
+backend/
+  bantay/          settings.py (.env + PostgreSQL/Supabase), urls.py, wsgi.py
+  core/
+    models.py      Barangay, User, Department, Category, Report, ReportPhoto, StatusHistory, Comment, Announcement, Notification
+    forms.py       ReportForm, ReportTransitionForm, ReportCommentForm, ReportRatingForm, ProfileForm
+    web.py         Server-rendered views & role-based access controls
+    web_urls.py    URL routes for auth, dashboards, profile, and report CRUD
+    migrations/    Schema and reference data migrations (0001–0004)
+    management/    seed.py command for reference & demo data
+  templates/       base.html, home.html, new_report.html, edit_report.html, detail.html, profile.html, lgu_dashboard.html, alerts.html, bulletin.html, auth/, partials/
+  static/          css/app.css, js/app.js, js/theme.js, img/, vendor/leaflet/
+docs/              Project Development completion report PDF
+```
+
+## Git Branching Strategy
+
+- `main`: stable release branch only (updated via Pull Request from `develop`).
+- `develop`: integration branch created from `main`.
+- `feature/<feature-name>`: feature branches created from `develop` and merged back via Pull Requests (`feature/incident-reporting-crud`, `feature/role-workflow-and-seeding`, `feature/pd2-completion-report`).
