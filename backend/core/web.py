@@ -1,4 +1,4 @@
-"""Server-rendered pages. Business rules live in models.py / serializers.py and are reused here."""
+"""Server-rendered pages. Business rules live in models.py / forms.py / serializers.py."""
 import datetime,mimetypes
 from functools import wraps
 from django.contrib import messages
@@ -10,15 +10,16 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Case,Count,F,IntegerField,Q,When
-from django.http import FileResponse
+from django.http import FileResponse,Http404
 from django.shortcuts import get_object_or_404,redirect,render
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from rest_framework.exceptions import ValidationError
+from .forms import ProfileForm,ReportCommentForm,ReportForm,ReportRatingForm,ReportTransitionForm
 from .models import *
-from .serializers import AnnS,ProfileS,RegisterS,ReportCreateS
+from .serializers import AnnS,RegisterS
 
 ACTIVE=['Pending','Assigned','In Progress']
 def flat(e,k=None,out=None):
@@ -27,7 +28,7 @@ def flat(e,k=None,out=None):
         for kk,v in e.items(): flat(v,kk,out)
     elif isinstance(e,(list,tuple)):
         for v in e: flat(v,k,out)
-    else: out.append(f"{k.replace('_',' ').capitalize()}: {e}" if k and k!='non_field_errors' else str(e))
+    else: out.append(f"{k.replace('_',' ').capitalize()}: {e}" if k and k not in ('non_field_errors','__all__') else str(e))
     return out
 def role(official):
     def deco(f):
@@ -91,16 +92,13 @@ def profile(r):
     errs=[]
     u=r.user
     if r.method=='POST':
-        s=ProfileS(data=r.POST,context={'user':u})
-        if s.is_valid():
-            d=s.validated_data
-            u.full_name=d['full_name'];u.email=d['email'];u.contact_number=d.get('contact_number','')
-            u.save(update_fields=['full_name','email','contact_number'])
+        form=ProfileForm(r.POST,instance=u)
+        if form.is_valid():
+            form.save()
             messages.success(r,'Profile updated.')
             return redirect('profile')
-        errs=flat(s.errors)
-    v={'full_name':u.full_name,'email':u.email,'contact_number':u.contact_number}
-    if r.method=='POST': v=r.POST
+        errs=flat(form.errors)
+    v=r.POST if r.method=='POST' else {'full_name':u.full_name,'email':u.email,'contact_number':u.contact_number}
     return render(r,'profile.html',{'errors':errs,'v':v})
 
 def forgot(r):
@@ -148,20 +146,43 @@ def lgu_dashboard(r):
 def new_report(r):
     errs=[]
     if r.method=='POST':
-        u=r.user;data=r.POST.copy();data.setlist('photos',r.FILES.getlist('photos'))
+        u=r.user
         if Report.objects.filter(reporter=u,created_at__gte=timezone.now()-datetime.timedelta(days=1)).count()>=5: errs=['Daily limit reached: 5 reports per day.']  # BR-10
         else:
-            s=ReportCreateS(data=data)
-            if s.is_valid():
-                d=s.validated_data;c=d['category']
+            form=ReportForm(r.POST,uploaded_photos=r.FILES.getlist('photos'))
+            if form.is_valid():
+                d=form.cleaned_data;c=d['category']
                 with transaction.atomic():
                     rep=Report.objects.create(reporter=u,barangay=u.barangay,category=c,title=d['title'],description=d['description'],latitude=d['latitude'],longitude=d['longitude'],location_note=d.get('location_note',''),
-                      is_suspicious_activity=d.get('is_suspicious_activity',False) and c.name=='Safety',is_emergency=c.is_emergency,priority='Urgent' if c.is_emergency else 'Normal')
-                    for f in d['photos']: ReportPhoto.objects.create(report=rep,image=f,file_type=f.image.format,file_size_kb=max(1,f.size//1024))
+                      is_suspicious_activity=d.get('is_suspicious_activity',False),is_emergency=c.is_emergency,priority='Urgent' if c.is_emergency else 'Normal')
+                    for f,fmt in form.validated_photos: ReportPhoto.objects.create(report=rep,image=f,file_type=fmt,file_size_kb=max(1,f.size//1024))
                     StatusHistory.objects.create(report=rep,changed_by=u,old_status=None,new_status='Pending')
                 messages.success(r,'Report submitted.');return redirect('detail',pk=rep.pk)
-            errs=flat(s.errors)
+            errs=flat(form.errors)
     return render(r,'new_report.html',{'cats':Category.objects.all(),'errors':errs,'v':r.POST})
+@role(False)
+def edit_report(r,pk):
+    x=get_object_or_404(scope(r.user).prefetch_related('photos'),pk=pk)
+    if x.reporter_id!=r.user.id or x.status!='Pending': raise PermissionDenied  # BR-18
+    errs=[]
+    if r.method=='POST':
+        form=ReportForm(r.POST,instance=x,uploaded_photos=r.FILES.getlist('photos'),remove_photo_ids=r.POST.getlist('remove_photos'))
+        if form.is_valid():
+            d=form.cleaned_data;c=d['category']
+            with transaction.atomic():
+                rep=form.save(commit=False)
+                rep.is_suspicious_activity=d.get('is_suspicious_activity',False)
+                rep.is_emergency=c.is_emergency
+                rep.priority='Urgent' if c.is_emergency else 'Normal'
+                rep.save()
+                for old_p in form.photos_to_remove: old_p.delete()
+                for f,fmt in form.validated_photos: ReportPhoto.objects.create(report=rep,image=f,file_type=fmt,file_size_kb=max(1,f.size//1024))
+            messages.success(r,'Report updated.');return redirect('detail',pk=x.pk)
+        errs=flat(form.errors)
+        v=r.POST
+    else:
+        v={'category':str(x.category_id),'title':x.title,'description':x.description,'latitude':str(x.latitude),'longitude':str(x.longitude),'location_note':x.location_note,'is_suspicious_activity':x.is_suspicious_activity}
+    return render(r,'edit_report.html',{'x':x,'cats':Category.objects.all(),'errors':errs,'v':v})
 @login_required
 def detail(r,pk):
     u=r.user;x=deco_report(get_object_or_404(reports_for(u).prefetch_related('photos'),pk=pk),u)
@@ -169,34 +190,52 @@ def detail(r,pk):
 @role(True)
 @require_POST
 def transition(r,pk):
-    u=r.user;p=r.POST.get('department','');assignee_id=r.POST.get('assigned_to','')
+    u=r.user
     with transaction.atomic():
         x=get_object_or_404(reports_for(u).select_for_update(of=('self',)),pk=pk)
-        try:
-            d=get_object_or_404(Department,pk=p,barangay=x.barangay) if p.isdigit() else None
-            assignee=get_object_or_404(User,pk=assignee_id,barangay=x.barangay,role='Staff',is_active=True) if u.can_manage_reports and r.POST.get('status')=='Assigned' and assignee_id.isdigit() else None
-            if u.can_manage_reports and r.POST.get('status')=='Assigned' and not assignee: raise ValidationError('Select a staff member to assign this report to.')
-            x.change_status(r.POST.get('status'),u,r.POST.get('comment',''),d)
-            if assignee:
-                x.assigned_to=assignee;x.save(update_fields=['assigned_to','updated_at'])
-                Notification.objects.create(user=assignee,report=x,message=f'You were assigned report "{x.title}".')
-            messages.success(r,f'Status updated to {x.status}.')
-        except ValidationError as e: messages.error(r,' '.join(flat(e.detail)))
+        form=ReportTransitionForm(r.POST,report=x,user=u)
+        if not form.is_valid():
+            messages.error(r,' '.join(flat(form.errors)))
+        else:
+            d=form.cleaned_data
+            try:
+                x.change_status(d['status'],u,d.get('comment',''),d.get('department'))
+                assignee=d.get('assigned_to') if u.can_manage_reports and d['status']=='Assigned' else None
+                if assignee:
+                    x.assigned_to=assignee;x.save(update_fields=['assigned_to','updated_at'])
+                    Notification.objects.create(user=assignee,report=x,message=f'You were assigned report "{x.title}".')
+                messages.success(r,f'Status updated to {x.status}.')
+            except ValidationError as e: messages.error(r,' '.join(flat(e.detail)))
     return redirect('detail',pk=pk)
 @login_required
 @require_POST
 def comment(r,pk):
     u=r.user
     if not (u.can_manage_reports or u.is_staff_member or u.role=='Volunteer'): raise PermissionDenied
-    x=get_object_or_404(reports_for(u),pk=pk);t=r.POST.get('comment','').strip()
-    if len(t)<2: messages.error(r,'Write a comment first.')
-    elif u.role=='Volunteer' and x.status not in ACTIVE: messages.error(r,'Community updates can only be added to active reports.')
+    x=get_object_or_404(reports_for(u),pk=pk)
+    form=ReportCommentForm(r.POST,report=x,user=u)
+    if not form.is_valid():
+        messages.error(r,' '.join(flat(form.errors)))
     else:
+        t=form.cleaned_data['comment']
         Comment.objects.create(report=x,author=u,comment_text=t[:1000],is_official=u.is_official)
         label='official update' if u.is_official else 'community update'
         if x.reporter_id!=u.id: Notification.objects.create(user=x.reporter,report=x,message=f'New {label} on "{x.title}".')
         if x.assigned_to_id and x.assigned_to_id!=u.id: Notification.objects.create(user=x.assigned_to,report=x,message=f'New {label} on "{x.title}".')
         messages.success(r,'Comment posted.')
+    return redirect('detail',pk=pk)
+@login_required
+@require_POST
+def rate_report(r,pk):
+    if not r.user.can_manage_reports: raise PermissionDenied
+    x=get_object_or_404(scope(r.user),pk=pk)
+    form=ReportRatingForm(r.POST,report=x)
+    if not form.is_valid():
+        messages.error(r,' '.join(flat(form.errors)))
+    else:
+        x.quality_rating=form.cleaned_data['rating']
+        x.save(update_fields=['quality_rating','updated_at'])
+        messages.success(r,f'Quality rating saved ({x.quality_rating}/5).')
     return redirect('detail',pk=pk)
 @role(False)
 @require_POST
