@@ -2,6 +2,13 @@ import os
 from pathlib import Path
 import dj_database_url
 B=Path(__file__).resolve().parent.parent
+for _env_path in (B/'.env', B.parent/'.env'):
+    if _env_path.is_file():
+        for _line in _env_path.read_text(encoding='utf-8').splitlines():
+            _s=_line.strip()
+            if _s and not _s.startswith('#') and '=' in _s:
+                _k,_v=_s.split('=',1)
+                os.environ.setdefault(_k.strip(),_v.strip().strip('"').strip("'"))
 E=os.environ.get
 DEBUG=E('DEBUG','0')=='1'
 SECRET_KEY=E('SECRET_KEY')

@@ -156,3 +156,60 @@ class Web(TestCase):
         c=Client(enforce_csrf_checks=True);assert c.post('/login/',{'email':'r@x.ph','password':'Str0ng#Pass1'}).status_code==403
     def test_delete_own_pending(s):
         s.client.force_login(s.res);i=int(s.rep().url.strip('/').split('/')[-1]);assert s.client.post(f'/reports/{i}/delete/').status_code==302 and not Report.objects.exists()
+    def test_edit_own_pending_report_crud_and_validation(s):
+        s.client.force_login(s.res);pk=int(s.rep(title='Old street leak').url.strip('/').split('/')[-1])
+        get_page=s.client.get(f'/reports/{pk}/edit/')
+        assert get_page.status_code==200 and b'Old street leak' in get_page.content
+        bad=s.client.post(f'/reports/{pk}/edit/',{
+            'category':Category.objects.get(name='Flooding').pk,
+            'title':'Up',
+            'description':'too short',
+            'latitude':'10.3',
+            'longitude':'123.8',
+        })
+        assert bad.status_code==200 and b'at least 20 characters' in bad.content
+        first_photo=Report.objects.get(pk=pk).photos.first()
+        no_photos=s.client.post(f'/reports/{pk}/edit/',{
+            'category':Category.objects.get(name='Flooding').pk,
+            'title':'Updated street leak',
+            'description':'Detailed updated description of the street water leak.',
+            'latitude':'10.312345',
+            'longitude':'123.881234',
+            'remove_photos':[str(first_photo.pk)],
+        })
+        assert no_photos.status_code==200 and b'At least 1 photo is required.' in no_photos.content
+        ok=s.client.post(f'/reports/{pk}/edit/',{
+            'category':Category.objects.get(name='Emergency').pk,
+            'title':'Updated emergency leak',
+            'description':'Detailed updated description of an urgent street hazard.',
+            'latitude':'10.312345',
+            'longitude':'123.881234',
+            'location_note':'Near Barangay Hall',
+            'photos':png(),
+        })
+        assert ok.status_code==302
+        rep=Report.objects.get(pk=pk)
+        assert rep.title=='Updated emergency leak' and rep.is_emergency and rep.priority=='Urgent' and rep.photos.count()==2
+        s.client.force_login(s.volunteer)
+        assert s.client.get(f'/reports/{pk}/edit/').status_code==403
+        s.client.force_login(s.off)
+        assert s.client.get(f'/reports/{pk}/edit/').status_code==403
+        s.client.post(f'/reports/{pk}/transition/',{'status':'Assigned','department':s.d.pk,'assigned_to':s.staff.pk})
+        s.client.force_login(s.res)
+        assert s.client.get(f'/reports/{pk}/edit/').status_code==403
+        assert s.client.post(f'/reports/{pk}/edit/',{'category':Category.objects.get(name='Flooding').pk,'title':'Blocked','description':'x'*25,'latitude':'10.3','longitude':'123.8'}).status_code==403
+    def test_official_quality_rating_ui(s):
+        s.client.force_login(s.res);pk=int(s.rep().url.strip('/').split('/')[-1])
+        assert s.client.post(f'/reports/{pk}/rate/',{'rating':'5'}).status_code==403
+        s.client.force_login(s.off)
+        assert b'Only Resolved reports' in s.client.post(f'/reports/{pk}/rate/',{'rating':'5'},follow=True).content
+        s.client.post(f'/reports/{pk}/transition/',{'status':'Assigned','department':s.d.pk,'assigned_to':s.staff.pk})
+        s.client.post(f'/reports/{pk}/transition/',{'status':'In Progress'})
+        s.client.post(f'/reports/{pk}/transition/',{'status':'Resolved','comment':'Cleared drainage'})
+        rated=s.client.post(f'/reports/{pk}/rate/',{'rating':'5'},follow=True)
+        assert rated.status_code==200 and b'Quality rating saved (5/5).' in rated.content
+        assert Report.objects.get(pk=pk).quality_rating==5
+    def test_profile_contact_validation(s):
+        s.client.force_login(s.res)
+        bad=s.client.post('/profile/',{'full_name':'Res One','email':'r@x.ph','contact_number':'abc'})
+        assert bad.status_code==200 and b'valid contact number' in bad.content
