@@ -1,10 +1,10 @@
 {% load static %}<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light dark">
-<title>{% block title %}BantayBarangay{% endblock %}</title><link rel="icon" href="{% static 'img/bantaybarangay-logo.png' %}">
+<title>{% block title %}BantayBarangay{% endblock %}</title><link rel="icon" type="image/png" href="{% static 'img/bantaybarangay-logo.png' %}?v=2">
 <script src="{% static 'js/theme.js' %}"></script><link rel="stylesheet" href="{% static 'css/app.css' %}">{% block head %}{% endblock %}</head>
 <body><div id="root">
 {% if user.is_authenticated %}<header class="app-header">
-<div class="brand-block"><a class="brand-name" href="{% url 'index' %}" aria-label="BantayBarangay home"><span class="brand-bantay">Bantay</span><span class="brand-barangay">Barangay</span></a><span class="tag">{{ role_label }}</span></div>
+<div class="brand-block"><a class="brand-name" href="{% url 'index' %}" aria-label="BantayBarangay home"><img class="brand-logo" src="{% static 'img/bantaybarangay-logo.png' %}?v=2" alt=""><span class="brand-bantay">Bantay</span><span class="brand-barangay">Barangay</span></a><span class="tag">{{ role_label }}</span></div>
 {% with n=request.resolver_match.url_name %}<nav class="main-nav" aria-label="Main navigation">
 <a href="{% url home_name %}"{% if n == home_name or n == 'detail' or n == 'new_report' or n == 'edit_report' %} class="active"{% endif %}>Home</a>
 {% if user.is_reporter or user.is_staff_member %}<a href="{% url 'alerts' %}"{% if n == 'alerts' %} class="active"{% endif %}>Alerts{% if unread %} ({{ unread }}){% endif %}</a>{% endif %}

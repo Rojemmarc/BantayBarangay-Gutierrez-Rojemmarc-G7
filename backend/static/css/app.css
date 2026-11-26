@@ -172,11 +172,21 @@ main {
 .brand-name {
   display: flex;
   flex: none;
-  align-items: baseline;
+  align-items: center;
+  gap: 0.45rem;
   font-size: clamp(1rem, 1.7vw, 1.3rem);
   font-weight: 800;
   line-height: 1.2;
+  text-decoration: none;
   white-space: nowrap;
+}
+
+.brand-logo {
+  display: block;
+  width: 26px;
+  height: 36px;
+  flex: none;
+  object-fit: contain;
 }
 
 .brand-bantay {
@@ -777,6 +787,11 @@ textarea {
 
   .brand-block .tag {
     font-size: 0.65rem;
+  }
+
+  .brand-logo {
+    width: 21px;
+    height: 29px;
   }
 
   .user-tools {
