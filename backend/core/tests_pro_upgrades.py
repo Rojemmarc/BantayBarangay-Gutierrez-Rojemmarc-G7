@@ -193,6 +193,8 @@ class ProUpgradesTest(TestCase):
         assert b'id="confirmModal"' in res_home
         assert b'id="pageSkeleton"' in res_home
         assert b'id="navProgress"' in res_home
+        assert b'id="profileMenuBtn"' in res_home
+        assert b'id="profileMenu"' in res_home
         assert b'Only my reports' not in res_home  # Hidden for Residents
 
         self.client.force_login(self.vol)

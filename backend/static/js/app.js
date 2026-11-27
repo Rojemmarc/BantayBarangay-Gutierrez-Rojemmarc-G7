@@ -5,22 +5,62 @@
     return (root || d).querySelector(sel);
   };
 
-  /* 1. Theme toggle */
+  /* 1. Theme toggle (supports both guest icon button and profile dropdown menu item) */
   var tg = $('#themeToggle');
+  var isDarkMode = function () {
+    var m = d.documentElement.dataset.theme;
+    if (m === 'dark') return true;
+    if (m === 'light') return false;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  };
   if (tg) {
     var paintTheme = function () {
-      var mode = d.documentElement.dataset.theme;
-      tg.textContent = mode === 'dark' ? '☀' : '☾';
-      tg.setAttribute('aria-label', mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      var dark = isDarkMode();
+      if (tg.hasAttribute('data-menu-theme')) {
+        var stateEl = $('#themeState');
+        if (stateEl) {
+          stateEl.textContent = dark ? 'On' : 'Off';
+          stateEl.classList.toggle('on', dark);
+        }
+        tg.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+      } else {
+        tg.textContent = dark ? '☀' : '☾';
+        tg.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+      }
     };
     paintTheme();
     tg.addEventListener('click', function () {
-      var next = d.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      var next = isDarkMode() ? 'light' : 'dark';
       d.documentElement.dataset.theme = next;
       try {
         localStorage.setItem('theme', next);
       } catch (e) {}
       paintTheme();
+    });
+  }
+
+  /* 1a. Profile picture avatar dropdown menu */
+  var menuBtn = $('#profileMenuBtn');
+  var menuEl = $('#profileMenu');
+  if (menuBtn && menuEl) {
+    var setMenuOpen = function (open) {
+      menuEl.hidden = !open;
+      menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    menuBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setMenuOpen(menuEl.hidden);
+    });
+    d.addEventListener('click', function (e) {
+      if (!menuEl.hidden && !menuEl.contains(e.target) && !menuBtn.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    });
+    d.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !menuEl.hidden) {
+        setMenuOpen(false);
+        menuBtn.focus();
+      }
     });
   }
 
