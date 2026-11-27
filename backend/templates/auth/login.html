@@ -1,8 +1,15 @@
 {% extends 'base.html' %}{% block title %}Log in · BantayBarangay{% endblock %}{% block mainclass %}auth-main{% endblock %}
 {% block content %}{% include 'partials/brand.html' %}
-<form class="c au" method="post" novalidate>{% csrf_token %}<h1>Log in</h1><input type="hidden" name="next" value="{{ next }}">
-<label for="email">Email</label><input id="email" name="email" type="email" value="{{ email_val }}" autocomplete="username" required autofocus{% if error %} aria-invalid="true"{% endif %}>
-<label for="password">Password</label><div class="pw-wrap"><input id="password" name="password" type="password" autocomplete="current-password" required{% if error %} aria-invalid="true"{% endif %}><button type="button" class="pw-toggle" data-pw-toggle="password" aria-pressed="false">Show</button></div>
-{% if error %}<div class="er" role="alert">{{ error }}</div>{% endif %}
-<button class="b pr" style="width:100%;margin-top:.85rem">Log in</button>
-<p style="text-align:center;margin-bottom:0"><a href="{% url 'forgot' %}">Forgot password?</a> · <a href="{% url 'register' %}">Create an account</a></p></form>{% endblock %}
+<form class="c au" method="post" novalidate>{% csrf_token %}
+  <h1 style="margin-bottom:.2rem">Welcome back</h1>
+  <p class="mu" style="margin:0 0 1rem">Sign in to report concerns, track status updates, or manage your barangay queue.</p>
+  <input type="hidden" name="next" value="{{ next }}">
+  <label for="email">Email</label>
+  <input id="email" name="email" type="email" value="{{ email_val }}" autocomplete="username" placeholder="you@barangay.ph" required autofocus{% if error %} aria-invalid="true"{% endif %}>
+  <label for="password">Password</label>
+  <div class="pw-wrap"><input id="password" name="password" type="password" autocomplete="current-password" required{% if error %} aria-invalid="true"{% endif %}><button type="button" class="pw-toggle" data-pw-toggle="password" aria-pressed="false">Show</button></div>
+  {% if error %}<div class="er" role="alert">{{ error }}</div>{% endif %}
+  <button class="b pr" style="width:100%;margin-top:.95rem">Log in</button>
+  <p style="text-align:center;margin:1rem 0 .25rem"><a href="{% url 'forgot' %}">Forgot password?</a> · <a href="{% url 'register' %}">Create an account</a></p>
+  <p style="text-align:center;margin:0;font-size:.85rem"><a class="mu" href="{% url 'index' %}">← Back to home</a></p>
+</form>{% endblock %}

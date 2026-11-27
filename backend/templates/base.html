@@ -3,8 +3,11 @@
 <title>{% block title %}BantayBarangay{% endblock %}</title>
 <link rel="icon" type="image/png" href="{% static 'img/bantaybarangay-logo.png' %}?v=2">
 <link rel="manifest" href="{% static 'manifest.json' %}">
-<script src="{% static 'js/theme.js' %}"></script><link rel="stylesheet" href="{% static 'css/app.css' %}?v=6">{% block head %}{% endblock %}</head>
-<body><a class="skip-link" href="#mainContent">Skip to main content</a><div id="root">
+<script src="{% static 'js/theme.js' %}"></script><link rel="stylesheet" href="{% static 'css/app.css' %}?v=7">{% block head %}{% endblock %}</head>
+<body>
+<a class="skip-link" href="#mainContent">Skip to main content</a>
+<div id="navProgress" class="nav-progress" aria-hidden="true"></div>
+<div id="root">
 {% if user.is_authenticated %}<header class="app-header">
 <div class="brand-block"><a class="brand-name" href="{% url 'index' %}" aria-label="BantayBarangay home"><img class="brand-logo" src="{% static 'img/bantaybarangay-logo.png' %}?v=2" alt=""><span class="brand-wordmark"><span class="brand-bantay">Bantay</span><span class="brand-barangay">Barangay</span></span></a><span class="tag">{{ role_label }}</span></div>
 {% with n=request.resolver_match.url_name %}<nav class="main-nav" aria-label="Main navigation">
@@ -17,7 +20,22 @@
 {% else %}{% block guest_header %}<button type="button" class="tg auth-theme-toggle" id="themeToggle" aria-label="Switch to dark mode">☾</button>{% endblock %}{% endif %}
 <main id="mainContent" class="{% if user.is_authenticated %}with-bottom-nav {% endif %}{% block mainclass %}{% endblock %}">
 {% for m in messages %}<div class="c msg-{{ m.level_tag }}" role="status" aria-live="polite">{{ m }}</div>{% endfor %}
-{% block content %}{% endblock %}
+<div id="pageContent">{% block content %}{% endblock %}</div>
+<div id="pageSkeleton" class="page-skeleton" hidden aria-live="polite" aria-label="Loading page content">
+  <div class="skel-head">
+    <div><div class="skel skel-title"></div><div class="skel skel-sub"></div></div>
+    <div class="skel skel-btn"></div>
+  </div>
+  <div class="g3" style="margin-bottom:1rem">
+    <div class="c"><div class="skel skel-line" style="width:45%"></div><div class="skel skel-num"></div></div>
+    <div class="c"><div class="skel skel-line" style="width:52%"></div><div class="skel skel-num"></div></div>
+    <div class="c"><div class="skel skel-line" style="width:40%"></div><div class="skel skel-num"></div></div>
+  </div>
+  <div class="c"><div class="skel skel-input"></div></div>
+  <div class="c"><div class="skel skel-line" style="width:55%"></div><div class="skel skel-line" style="width:36%"></div></div>
+  <div class="c"><div class="skel skel-line" style="width:68%"></div><div class="skel skel-line" style="width:42%"></div></div>
+  <div class="c"><div class="skel skel-line" style="width:48%"></div><div class="skel skel-line" style="width:30%"></div></div>
+</div>
 <footer class="app-footer mu"><p><a href="{% url 'legal' %}">Privacy · Terms · Cookies</a></p><p>Not a substitute for 911 or the barangay hotline.</p></footer></main></div>
 <dialog id="confirmModal" class="modal-dialog" aria-labelledby="confirmTitle">
   <h2 id="confirmTitle" style="margin-top:0">Confirm action</h2>
@@ -31,4 +49,4 @@
   <div class="row" style="justify-content:flex-end;margin-bottom:.5rem"><form method="dialog" style="margin:0"><button class="b sm">Close</button></form></div>
   <img id="lightboxImg" src="" alt="Report photo preview">
 </dialog>
-{% block vendor %}{% endblock %}<script src="{% static 'js/app.js' %}?v=6" defer></script></body></html>
+{% block vendor %}{% endblock %}<script src="{% static 'js/app.js' %}?v=7" defer></script></body></html>

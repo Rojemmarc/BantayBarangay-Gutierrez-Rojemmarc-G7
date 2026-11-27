@@ -22,7 +22,7 @@
   {% for e in fe.description %}<p class="field-error">{{ e }}</p>{% endfor %}
 
   <label>Current photos ({{ evidence_photos|length }}/3)</label>
-  <div class="photos">{% for p in evidence_photos %}<div class="photo-card"><img src="{% url 'photo' p.pk %}" alt="Report evidence" loading="lazy" data-lightbox><label class="checkbox-row"><input type="checkbox" name="remove_photos" value="{{ p.pk }}"><span>Remove photo</span></label></div>{% endfor %}</div>
+  <div class="photos">{% for p in evidence_photos %}<div class="photo-card"><div class="skel-media"><img src="{% url 'photo' p.pk %}" alt="Report evidence" loading="lazy" data-lightbox></div><label class="checkbox-row"><input type="checkbox" name="remove_photos" value="{{ p.pk }}"><span>Remove photo</span></label></div>{% endfor %}</div>
 
   <label for="photos">Add photos (optional — JPG or PNG, max 3 total, 5 MB each)</label>
   <input id="photos" name="photos" type="file" accept="image/jpeg,image/png" multiple data-photo-input data-photo-preview="photoPreview" data-photo-status="photoStatus" data-max-files="3">

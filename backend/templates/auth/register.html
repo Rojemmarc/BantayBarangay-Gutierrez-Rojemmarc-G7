@@ -1,6 +1,8 @@
 {% extends 'base.html' %}{% block title %}Create account · BantayBarangay{% endblock %}{% block mainclass %}auth-main{% endblock %}
 {% block content %}{% include 'partials/brand.html' %}
-<form class="c au" method="post" novalidate>{% csrf_token %}<h1>Create account</h1>
+<form class="c au" method="post" novalidate>{% csrf_token %}
+<h1 style="margin-bottom:.2rem">Create your account</h1>
+<p class="mu" style="margin:0 0 1rem">Join BantayBarangay as a resident to submit and track community concerns.</p>
 {% include 'partials/errors.html' %}
 <label for="full_name">Full name</label>
 <input id="full_name" name="full_name" value="{{ v.full_name }}" required minlength="2" maxlength="150" autocomplete="name"{% if fe.full_name %} aria-invalid="true"{% endif %}>

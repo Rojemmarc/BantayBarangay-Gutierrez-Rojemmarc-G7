@@ -191,6 +191,8 @@ class ProUpgradesTest(TestCase):
         assert b'with-bottom-nav' in res_home
         assert b'manifest.json' in res_home
         assert b'id="confirmModal"' in res_home
+        assert b'id="pageSkeleton"' in res_home
+        assert b'id="navProgress"' in res_home
         assert b'Only my reports' not in res_home  # Hidden for Residents
 
         self.client.force_login(self.vol)

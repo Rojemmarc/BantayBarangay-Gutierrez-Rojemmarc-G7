@@ -1,11 +1,34 @@
 {% extends 'base.html' %}{% block title %}Alerts · BantayBarangay{% endblock %}
 {% block content %}
-<h1>Notifications</h1>
+<div class="page-head">
+  <div>
+    <h1>Notifications</h1>
+    <p class="mu">Real-time status transitions, emergency notices, and official updates.</p>
+  </div>
+</div>
+
 {% for n in items %}
   {% if n.report_id %}
-  <a class="c{% if not n.is_read %} unread{% endif %}" href="{% url 'detail' n.report_id %}">{{ n.message }}<div class="mu">{{ n.created_at|date:"M j, Y g:i A" }}</div></a>
+  <a class="c alert-card{% if not n.is_read %} unread{% endif %}" href="{% url 'detail' n.report_id %}">
+    <div class="row" style="justify-content:flex-start;flex:1;min-width:0">
+      <span class="alert-dot" aria-hidden="true"></span>
+      <div>
+        <div style="font-weight:600;color:var(--tx)">{{ n.message }}</div>
+        <div class="mu">{{ n.created_at|date:"M j, Y g:i A" }}</div>
+      </div>
+    </div>
+    <span class="report-chevron" aria-hidden="true">›</span>
+  </a>
   {% else %}
-  <div class="c{% if not n.is_read %} unread{% endif %}">{{ n.message }}<div class="mu">{{ n.created_at|date:"M j, Y g:i A" }}</div></div>
+  <div class="c alert-card{% if not n.is_read %} unread{% endif %}">
+    <div class="row" style="justify-content:flex-start;flex:1;min-width:0">
+      <span class="alert-dot" aria-hidden="true"></span>
+      <div>
+        <div style="font-weight:600;color:var(--tx)">{{ n.message }}</div>
+        <div class="mu">{{ n.created_at|date:"M j, Y g:i A" }}</div>
+      </div>
+    </div>
+  </div>
   {% endif %}
 {% empty %}
   {% include 'partials/empty.html' with title='You are all caught up' message='Report updates, emergency alerts, and official comments will appear here.' %}

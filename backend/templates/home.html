@@ -2,7 +2,7 @@
 {% block title %}{% if user.can_manage_reports %}Reports dashboard{% elif user.is_staff_member %}Staff workspace{% else %}Home{% endif %} · BantayBarangay{% endblock %}
 {% block vendor %}{% if user.can_manage_reports and map_points_count %}<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}"><script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>{% endif %}{% endblock %}
 {% block content %}
-<div class="row">
+<div class="page-head">
   <div>
     <h1>{% if user.can_manage_reports %}Reports dashboard{% elif user.is_staff_member %}Assigned reports{% else %}Hello, {{ user.full_name|truncatechars:30 }}{% endif %}</h1>
     <p class="mu">{{ user.barangay }}</p>
@@ -77,6 +77,11 @@
     <div class="row" style="justify-content:flex-start;margin-top:.75rem"><button class="b pr">Apply filters</button></div>
   </details>
 </form>
+
+<div class="list-head">
+  <h2>{% if filtered %}Filtered reports{% else %}Reports{% endif %}</h2>
+  <span class="mu">{{ page.paginator.count }} total</span>
+</div>
 
 {% for x in page %}{% include 'partials/card.html' %}{% empty %}
 {% if filtered %}{% include 'partials/empty.html' with title='No reports found' message='Try changing your search or filters.' %}{% elif user.is_official %}{% include 'partials/empty.html' with title='No reports yet' message='There are no reports in your current work queue.' %}{% else %}{% url 'new_report' as nr %}{% include 'partials/empty.html' with title='No reports yet' message='Be the first to report an issue in your barangay.' href=nr cta='Submit a report' %}{% endif %}{% endfor %}

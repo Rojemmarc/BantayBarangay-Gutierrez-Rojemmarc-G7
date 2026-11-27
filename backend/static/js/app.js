@@ -24,6 +24,73 @@
     });
   }
 
+  /* 1b. Lag-aware skeleton loading & top progress bar on slow navigation/requests */
+  var navBar = $('#navProgress');
+  var pageContent = $('#pageContent');
+  var pageSkeleton = $('#pageSkeleton');
+  var skelTimer = null;
+
+  var startNavLoading = function () {
+    if (navBar) {
+      navBar.classList.remove('done');
+      navBar.classList.add('active');
+    }
+    if (skelTimer) clearTimeout(skelTimer);
+    skelTimer = setTimeout(function () {
+      if (pageContent && pageSkeleton) {
+        pageContent.hidden = true;
+        pageSkeleton.hidden = false;
+      }
+    }, 180);
+  };
+
+  var resetNavLoading = function () {
+    if (skelTimer) {
+      clearTimeout(skelTimer);
+      skelTimer = null;
+    }
+    if (navBar) {
+      navBar.classList.remove('active');
+      navBar.classList.add('done');
+    }
+    if (pageContent && pageSkeleton) {
+      pageSkeleton.hidden = true;
+      pageContent.hidden = false;
+    }
+  };
+
+  d.addEventListener('click', function (e) {
+    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    var link = e.target.closest('a[href]');
+    if (!link) return;
+    var href = link.getAttribute('href') || '';
+    if (!href || href.startsWith('#') || link.target === '_blank' || link.hasAttribute('download')) return;
+    if (href.indexOf('export.csv') !== -1) return;
+    try {
+      var targetUrl = new URL(link.href, location.href);
+      if (targetUrl.origin !== location.origin) return;
+      if (targetUrl.pathname === location.pathname && targetUrl.search === location.search && targetUrl.hash) return;
+    } catch (err) {
+      return;
+    }
+    startNavLoading();
+  });
+
+  /* Image skeleton crossfade */
+  d.querySelectorAll('.skel-media img').forEach(function (img) {
+    var wrap = img.closest('.skel-media');
+    if (!wrap) return;
+    var markLoaded = function () {
+      wrap.classList.add('loaded');
+    };
+    if (img.complete && img.naturalWidth > 0) {
+      markLoaded();
+    } else {
+      img.addEventListener('load', markLoaded, { once: true });
+      img.addEventListener('error', markLoaded, { once: true });
+    }
+  });
+
   /* 2. Accessible confirmation modal + double-submit guard */
   var confirmModal = $('#confirmModal');
   var confirmMessage = $('#confirmMessage');
@@ -59,12 +126,16 @@
         return;
       }
     }
-    if (f.dataset.nobusy !== undefined || f.method === 'get') return;
+    if (f.dataset.nobusy !== undefined || f.method === 'get') {
+      if (f.method === 'get') startNavLoading();
+      return;
+    }
     if (f.dataset.busy) {
       e.preventDefault();
       return;
     }
     f.dataset.busy = '1';
+    startNavLoading();
     var btn = e.submitter || $('button:not([type=button])', f);
     if (btn) {
       setTimeout(function () {
@@ -76,6 +147,7 @@
   });
 
   window.addEventListener('pageshow', function (e) {
+    resetNavLoading();
     if (e.persisted) {
       location.reload();
       return;
@@ -267,11 +339,18 @@
         }
       }
 
+      el.classList.add('is-loading');
       var map = L.map(el).setView([lat, lng], 15);
       var tiles = L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
         maxZoom: 19,
       }).addTo(map);
+
+      var clearMapSkel = function () {
+        el.classList.remove('is-loading');
+      };
+      tiles.on('load', clearMapSkel);
+      setTimeout(clearMapSkel, 3500);
 
       var marker = null;
       var putPin = function (ll) {
@@ -281,6 +360,7 @@
       if (has) putPin([lat, lng]);
 
       tiles.on('tileerror', function () {
+        clearMapSkel();
         if (status) status.textContent = 'Map tiles could not be loaded. Enter the latitude and longitude manually below.';
       });
       requestAnimationFrame(function () {

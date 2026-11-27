@@ -1,36 +1,42 @@
 {% extends 'base.html' %}{% block title %}LGU analytics · BantayBarangay{% endblock %}
 {% block content %}
-<div class="row">
+<div class="page-head">
   <div>
     <h1>LGU analytics</h1>
     <p class="mu">Aggregated report counts across barangays. No resident identities, report details, photos, or precise locations are shown.</p>
   </div>
-  <a class="b" href="{% url 'export_lgu_csv' %}">Export CSV</a>
+  <a class="b pr" href="{% url 'export_lgu_csv' %}">Export CSV</a>
 </div>
 
 <div class="g3">
-  <div class="c"><b>{{ total }}</b><span class="mu">Total reports</span></div>
-  {% for row in statuses %}<div class="c"><b>{{ row.count }}</b><span class="mu">{{ row.status }} ({{ row.pct }}%)</span></div>{% endfor %}
+  <div class="c kpi-card kpi-pending"><div><span class="kpi-label">Total reports</span><b data-count="{{ total }}">{{ total }}</b></div></div>
+  {% for row in statuses %}<div class="c kpi-card"><div><span class="kpi-label">{{ row.status }} ({{ row.pct }}%)</span><b data-count="{{ row.count }}">{{ row.count }}</b></div></div>{% endfor %}
 </div>
 
-<h2>Reports by status</h2>
-<div class="c">
-  {% for row in statuses %}
-  <div class="bar-row">
-    <div class="row"><span>{{ row.status }}</span><b>{{ row.count }} ({{ row.pct }}%)</b></div>
-    <div class="bar-track" role="progressbar" aria-valuenow="{{ row.pct }}" aria-valuemin="0" aria-valuemax="100"><div class="bar-fill" style="width:{{ row.pct }}%"></div></div>
+<div class="lgu-grid">
+  <div>
+    <h2 style="margin-top:.5rem">Reports by status</h2>
+    <div class="c">
+      {% for row in statuses %}
+      <div class="bar-row">
+        <div class="row"><span>{{ row.status }}</span><b>{{ row.count }} ({{ row.pct }}%)</b></div>
+        <div class="bar-track" role="progressbar" aria-valuenow="{{ row.pct }}" aria-valuemin="0" aria-valuemax="100"><div class="bar-fill" style="width:{{ row.pct }}%"></div></div>
+      </div>
+      {% empty %}<span class="mu">No report data yet.</span>{% endfor %}
+    </div>
   </div>
-  {% empty %}<span class="mu">No report data yet.</span>{% endfor %}
-</div>
 
-<h2>Reports by category</h2>
-<div class="c">
-  {% for row in categories %}
-  <div class="bar-row">
-    <div class="row"><span>{{ row.category__name }}</span><b>{{ row.count }} ({{ row.pct }}%)</b></div>
-    <div class="bar-track" role="progressbar" aria-valuenow="{{ row.pct }}" aria-valuemin="0" aria-valuemax="100"><div class="bar-fill" style="width:{{ row.pct }}%"></div></div>
+  <div>
+    <h2 style="margin-top:.5rem">Reports by category</h2>
+    <div class="c">
+      {% for row in categories %}
+      <div class="bar-row">
+        <div class="row"><span>{{ row.category__name }}</span><b>{{ row.count }} ({{ row.pct }}%)</b></div>
+        <div class="bar-track" role="progressbar" aria-valuenow="{{ row.pct }}" aria-valuemin="0" aria-valuemax="100"><div class="bar-fill" style="width:{{ row.pct }}%"></div></div>
+      </div>
+      {% empty %}<span class="mu">No report data yet.</span>{% endfor %}
+    </div>
   </div>
-  {% empty %}<span class="mu">No report data yet.</span>{% endfor %}
 </div>
 
 <h2>Reports by barangay</h2>
