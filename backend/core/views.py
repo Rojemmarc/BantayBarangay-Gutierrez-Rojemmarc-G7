@@ -17,6 +17,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import ViewSet
 from .models import *
 from .serializers import *
+from .services import barangay_leaderboard, notify_emergency_officials, reports_for_user, scope_reports, strip_image_exif
 
 class IsOfficial(BasePermission):
     def has_permission(s,r,v): return bool(r.user.is_authenticated and r.user.is_official)
@@ -111,15 +112,8 @@ def rep_out(r,u,full=False):
          history=[dict(status=h.new_status,by='Anonymous' if anon and h.changed_by_id==r.reporter_id else h.changed_by.full_name,at=h.changed_at) for h in r.history.select_related('changed_by')],
          comments=[dict(by=c.author.full_name,text=c.comment_text,at=c.created_at) for c in r.comments.select_related('author')])
     return d
-def scope(u):
-    q=Report.objects.all() if u.is_superuser and not u.barangay_id else Report.objects.filter(barangay=u.barangay)
-    return q.select_related('reporter','category','department','assigned_to')  # BR-19/20
-def reports_for(u):
-    if u.is_lgu: raise PermissionDenied('LGU accounts can only view aggregated report data.')
-    if u.is_superuser or u.role=='Official': return scope(u)
-    if u.is_staff_member: return scope(u).filter(assigned_to=u)
-    if u.role=='Volunteer': return scope(u)
-    return Report.objects.filter(reporter=u).select_related('reporter','category','department','assigned_to')
+def scope(u): return scope_reports(u)
+def reports_for(u): return reports_for_user(u)
 
 class ReportViewSet(ViewSet):
     parser_classes=[MultiPartParser,FormParser,JSONParser]
@@ -146,8 +140,12 @@ class ReportViewSet(ViewSet):
         ser=ReportCreateS(data=r.data);ser.is_valid(raise_exception=True);d=ser.validated_data;c=d['category']
         rep=Report.objects.create(reporter=u,barangay=u.barangay,category=c,title=d['title'],description=d['description'],latitude=d['latitude'],longitude=d['longitude'],location_note=d.get('location_note',''),
           is_suspicious_activity=d.get('is_suspicious_activity',False) and c.name=='Safety',is_emergency=c.is_emergency,priority='Urgent' if c.is_emergency else 'Normal')  # BR-11/21
-        for f in d['photos']: ReportPhoto.objects.create(report=rep,image=f,file_type=f.image.format,file_size_kb=max(1,f.size//1024))
+        for f in d['photos']:
+            fmt=(f.image.format or '').upper()
+            clean_f=strip_image_exif(f,fmt)
+            ReportPhoto.objects.create(report=rep,image=clean_f,file_type=fmt,file_size_kb=max(1,clean_f.size//1024))
         StatusHistory.objects.create(report=rep,changed_by=u,old_status=None,new_status='Pending')
+        notify_emergency_officials(rep)
         return Response(rep_out(rep,u,True),status=201)
     def destroy(s,r,pk=None):
         if not r.user.is_reporter: raise PermissionDenied('Only residents and volunteers can delete reports.')
@@ -194,7 +192,9 @@ class ReportViewSet(ViewSet):
 def photo(r,pk):
     p=get_object_or_404(ReportPhoto.objects.select_related('report'),pk=pk)
     get_object_or_404(reports_for(r.user),pk=p.report_id)
-    return FileResponse(p.image.open('rb'),content_type=mimetypes.guess_type(p.image.name)[0] or 'application/octet-stream')
+    try: fh=p.image.open('rb')
+    except FileNotFoundError as exc: raise Http404('Photo file not found.') from exc
+    return FileResponse(fh,content_type=mimetypes.guess_type(p.image.name)[0] or 'application/octet-stream')
 
 @api_view(['GET'])
 def stats(r):
@@ -226,8 +226,7 @@ def notifications(r):
 @api_view(['GET'])
 @permission_classes([IsNotLGU])
 def ranking(r):  # BR-26
-    rows=User.objects.filter(barangay=r.user.barangay,role__in=['Resident','Volunteer']).annotate(t=Count('reports',filter=~Q(reports__status='Rejected')),rs=Count('reports',filter=Q(reports__status='Resolved')),hi=Count('reports',filter=Q(reports__quality_rating__gte=4)&~Q(reports__status='Rejected')))
-    out=sorted(([x.full_name,x.t+2*x.rs+x.hi] for x in rows),key=lambda z:-z[1])[:5];return Response([dict(name=n,points=p) for n,p in out])
+    return Response([dict(name=n,points=p) for n,p in barangay_leaderboard(r.user.barangay,limit=5)])
 
 @api_view(['GET'])
 @permission_classes([IsLGU])

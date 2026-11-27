@@ -1,19 +1,103 @@
 {% extends 'base.html' %}{% load static %}{% block title %}{{ x.title }} · BantayBarangay{% endblock %}
 {% block vendor %}<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}"><script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>{% endblock %}
-{% block content %}<a href="{% url home_name %}">← Back to reports</a>
-<div class="c{% if x.active %} em{% endif %}" style="margin-top:.5rem"><div class="row"><h1>{{ x.title }}</h1>{% include 'partials/badge.html' with status=x.status %}</div>
-<p class="mu">{{ x.category.name }} · {{ x.who }} · {{ x.created_at|date:"M j, Y g:i A" }}{% if x.department %} · Department: {{ x.department.name }}{% endif %}{% if x.assigned_to %} · Staff: {{ x.assigned_to.full_name }}{% endif %}{% if x.quality_rating %} · Quality rating: {{ x.quality_rating }}/5{% endif %}</p>
-{% if user.can_manage_reports %}<p class="mu">Contact: {{ x.reporter.email }} {{ x.reporter.contact_number }}</p>{% endif %}
-<p>{{ x.description|linebreaksbr }}</p>{% if x.location_note %}<p class="mu">📍 {{ x.location_note }}</p>{% endif %}
-<div class="map" data-map data-lat="{{ x.latitude|stringformat:'s' }}" data-lng="{{ x.longitude|stringformat:'s' }}" role="img" aria-label="Report location"></div><p class="mu">{{ x.latitude }}, {{ x.longitude }}</p>
-<div class="photos">{% for p in x.photos.all %}<img src="{% url 'photo' p.pk %}" alt="Report evidence" loading="lazy">{% endfor %}</div></div>
-<h2>Status history</h2><div class="c tl">{% for h,by in history %}<div>{% include 'partials/badge.html' with status=h.new_status %} <span class="mu">{{ h.changed_at|date:"M j, Y g:i A" }} · {{ by }}</span></div>{% endfor %}</div>
-<h2>Updates</h2>{% for c in comments %}<div class="c"><b>{{ c.author.full_name }}</b> <span class="mu">{% if c.is_official %}Official update · {% else %}Community update · {% endif %}{{ c.created_at|date:"M j, Y g:i A" }}</span><p>{{ c.comment_text|linebreaksbr }}</p></div>{% empty %}{% include 'partials/empty.html' with title='No updates yet' message='Updates and coordination notes will appear here.' %}{% endfor %}
-{% if user.can_manage_reports or user.is_staff_member or user.role == 'Volunteer' and x.status != 'Resolved' and x.status != 'Rejected' %}<h2>{% if user.can_manage_reports %}Official actions{% elif user.is_staff_member %}Assigned case actions{% else %}Community coordination{% endif %}</h2><form class="c" method="post" action="{% if user.can_manage_reports or user.is_staff_member %}{% url 'transition' x.pk %}{% else %}{% url 'comment' x.pk %}{% endif %}" novalidate>{% csrf_token %}
-{% if user.can_manage_reports and 'Assigned' in nx %}<label for="department">Department</label><select id="department" name="department"><option value="">Select…</option>{% for d in depts %}<option value="{{ d.pk }}"{% if d == x.department %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select>
-<label for="assigned_to">Assign to staff member</label><select id="assigned_to" name="assigned_to"><option value="">Select staff…</option>{% for staff in staff_members %}<option value="{{ staff.pk }}"{% if staff == x.assigned_to %} selected{% endif %}>{{ staff.full_name }}</option>{% endfor %}</select>{% endif %}
-{% if user.can_manage_reports or user.is_staff_member or user.role == 'Volunteer' %}<label for="comment">{% if user.role == 'Volunteer' %}Coordination update{% else %}Comment (required to resolve or reject){% endif %}</label><textarea id="comment" name="comment" rows="3" maxlength="1000"></textarea>{% endif %}
-<div class="row" style="justify-content:flex-start;margin-top:.75rem"><button class="b" formaction="{% url 'comment' x.pk %}">Post comment</button>{% if user.can_manage_reports or user.is_staff_member %}{% for n in nx %}<button class="b {% if n == 'Rejected' %}rd{% else %}pr{% endif %}" name="status" value="{{ n }}">Mark {{ n }}</button>{% endfor %}{% endif %}</div>
-{% if not nx and user.can_manage_reports or not nx and user.is_staff_member %}<p class="mu">This report is closed.</p>{% endif %}</form>{% endif %}
-{% if user.can_manage_reports and x.status == 'Resolved' %}<h2>Report quality rating</h2><form class="c" method="post" action="{% url 'rate_report' x.pk %}" novalidate>{% csrf_token %}<label for="rating">Quality rating (1 to 5)</label><div class="row" style="justify-content:flex-start"><select id="rating" name="rating" style="max-width:220px"><option value="">Select rating…</option><option value="1"{% if x.quality_rating == 1 %} selected{% endif %}>1 – Needs detail</option><option value="2"{% if x.quality_rating == 2 %} selected{% endif %}>2 – Fair</option><option value="3"{% if x.quality_rating == 3 %} selected{% endif %}>3 – Good</option><option value="4"{% if x.quality_rating == 4 %} selected{% endif %}>4 – Very helpful</option><option value="5"{% if x.quality_rating == 5 %} selected{% endif %}>5 – Excellent evidence</option></select><button class="b pr">Save rating</button></div></form>{% endif %}
-{% if x.reporter_id == user.id and x.status == 'Pending' %}<div class="row" style="justify-content:flex-start;margin-top:.75rem"><a class="b pr" href="{% url 'edit_report' x.pk %}">Edit report</a><form method="post" action="{% url 'delete_report' x.pk %}" data-confirm="Delete this report? This cannot be undone." style="margin:0">{% csrf_token %}<button class="b rd">Delete report</button></form></div>{% endif %}{% endblock %}
+{% block content %}
+<div class="row no-print">
+  <a href="{% url home_name %}">← Back to reports</a>
+  <button type="button" class="b sm" data-print>Print report</button>
+</div>
+
+<div class="c{% if x.active %} em{% endif %}" style="margin-top:.5rem">
+  <div class="row"><h1>{{ x.title }}</h1>{% include 'partials/badge.html' with status=x.status %}</div>
+  <p class="mu">Report #{{ x.pk }} · {{ x.category.name }} · {{ x.who }} · {{ x.created_at|date:"M j, Y g:i A" }}{% if x.department %} · Department: {{ x.department.name }}{% endif %}{% if x.assigned_to %} · Staff: {{ x.assigned_to.full_name }}{% endif %}{% if x.quality_rating %} · Quality rating: {{ x.quality_rating }}/5{% endif %}</p>
+  {% if user.can_manage_reports %}<p class="mu">Contact: {{ x.reporter.email }} {{ x.reporter.contact_number }}</p>{% endif %}
+  <p>{{ x.description|linebreaksbr }}</p>
+  {% if x.location_note %}<p class="mu">📍 {{ x.location_note }}</p>{% endif %}
+  <div class="map" data-map data-lat="{{ x.latitude|stringformat:'s' }}" data-lng="{{ x.longitude|stringformat:'s' }}" role="img" aria-label="Report location"></div>
+  <p class="mu">{{ x.latitude }}, {{ x.longitude }}</p>
+
+  {% if evidence_photos %}
+  <p class="photo-tag">Submitted evidence (click to enlarge)</p>
+  <div class="photos">{% for p in evidence_photos %}<img src="{% url 'photo' p.pk %}" alt="Report evidence" loading="lazy" data-lightbox>{% endfor %}</div>
+  {% endif %}
+
+  {% if resolution_photos %}
+  <p class="photo-tag">Resolution proof (click to enlarge)</p>
+  <div class="photos">{% for p in resolution_photos %}<img src="{% url 'photo' p.pk %}" alt="Resolution proof" loading="lazy" data-lightbox>{% endfor %}</div>
+  {% endif %}
+</div>
+
+<h2>Status history</h2>
+<div class="c tl">{% for h,by in history %}<div>{% include 'partials/badge.html' with status=h.new_status %} <span class="mu">{{ h.changed_at|date:"M j, Y g:i A" }} · {{ by }}</span></div>{% endfor %}</div>
+
+<h2>Updates</h2>
+{% for c in comments %}<div class="c"><b>{{ c.author.full_name }}</b> <span class="mu">{% if c.is_official %}Official update · {% else %}Community update · {% endif %}{{ c.created_at|date:"M j, Y g:i A" }}</span><p>{{ c.comment_text|linebreaksbr }}</p></div>{% empty %}{% include 'partials/empty.html' with title='No updates yet' message='Updates and coordination notes will appear here.' %}{% endfor %}
+
+{% if user.can_manage_reports or user.is_staff_member or user.role == 'Volunteer' and x.status != 'Resolved' and x.status != 'Rejected' %}
+<h2 class="no-print">{% if user.can_manage_reports %}Official actions{% elif user.is_staff_member %}Assigned case actions{% else %}Community coordination{% endif %}</h2>
+<form class="c no-print" method="post" enctype="multipart/form-data" action="{% if user.can_manage_reports or user.is_staff_member %}{% url 'transition' x.pk %}{% else %}{% url 'comment' x.pk %}{% endif %}" novalidate>{% csrf_token %}
+  {% if user.can_manage_reports and 'Assigned' in nx %}
+  <label for="department">Department</label>
+  <select id="department" name="department"><option value="">Select…</option>{% for d in depts %}<option value="{{ d.pk }}"{% if d == x.department %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select>
+  <label for="assigned_to">Assign to staff member</label>
+  <select id="assigned_to" name="assigned_to"><option value="">Select staff…</option>{% for staff in staff_members %}<option value="{{ staff.pk }}"{% if staff == x.assigned_to %} selected{% endif %}>{{ staff.full_name }}</option>{% endfor %}</select>
+  {% endif %}
+
+  {% if user.can_manage_reports or user.is_staff_member or user.role == 'Volunteer' %}
+  <label for="comment">{% if user.role == 'Volunteer' %}Coordination update{% else %}Comment (required to resolve or reject){% endif %}</label>
+  <textarea id="comment" name="comment" rows="3" maxlength="1000"></textarea>
+  {% endif %}
+
+  {% if 'Resolved' in nx and user.is_official %}
+  <label for="resolution_photos">Resolution proof photo (optional — JPG/PNG, up to 2)</label>
+  <input id="resolution_photos" name="resolution_photos" type="file" accept="image/jpeg,image/png" multiple data-photo-input data-photo-preview="resPreview" data-photo-status="resStatus" data-max-files="2">
+  <p class="field-hint" id="resStatus" role="status"></p>
+  <div id="resPreview" class="preview-grid"></div>
+  {% endif %}
+
+  <div class="row" style="justify-content:flex-start;margin-top:.75rem">
+    <button class="b" formaction="{% url 'comment' x.pk %}">Post comment</button>
+    {% if user.can_manage_reports or user.is_staff_member %}{% for n in nx %}<button class="b {% if n == 'Rejected' %}rd{% else %}pr{% endif %}" name="status" value="{{ n }}">Mark {{ n }}</button>{% endfor %}{% endif %}
+  </div>
+  {% if not nx and user.can_manage_reports or not nx and user.is_staff_member %}<p class="mu">This report is closed.</p>{% endif %}
+</form>
+{% endif %}
+
+{% if user.can_manage_reports and x.status == 'Assigned' or user.can_manage_reports and x.status == 'In Progress' %}
+<details class="c filter-panel no-print">
+  <summary>Reassign department or staff member</summary>
+  <form method="post" action="{% url 'reassign_report' x.pk %}" novalidate style="margin-top:.5rem">{% csrf_token %}
+    <div class="row">
+      <div style="flex:1;min-width:180px">
+        <label for="reassign_dept">Department</label>
+        <select id="reassign_dept" name="department" required>{% for d in depts %}<option value="{{ d.pk }}"{% if d == x.department %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select>
+      </div>
+      <div style="flex:1;min-width:180px">
+        <label for="reassign_staff">Staff member</label>
+        <select id="reassign_staff" name="assigned_to" required>{% for staff in staff_members %}<option value="{{ staff.pk }}"{% if staff == x.assigned_to %} selected{% endif %}>{{ staff.full_name }}</option>{% endfor %}</select>
+      </div>
+    </div>
+    <label for="reassign_note">Reassignment note (optional)</label>
+    <input id="reassign_note" name="note" maxlength="500" placeholder="Reason for reassignment">
+    <button class="b pr" style="margin-top:.75rem">Save reassignment</button>
+  </form>
+</details>
+{% endif %}
+
+{% if user.can_manage_reports and x.status == 'Resolved' %}
+<h2 class="no-print">Report quality rating</h2>
+<form class="c no-print" method="post" action="{% url 'rate_report' x.pk %}" novalidate>{% csrf_token %}
+  <label for="rating">Quality rating (1 to 5)</label>
+  <div class="row" style="justify-content:flex-start">
+    <select id="rating" name="rating" style="max-width:220px"><option value="">Select rating…</option><option value="1"{% if x.quality_rating == 1 %} selected{% endif %}>1 – Needs detail</option><option value="2"{% if x.quality_rating == 2 %} selected{% endif %}>2 – Fair</option><option value="3"{% if x.quality_rating == 3 %} selected{% endif %}>3 – Good</option><option value="4"{% if x.quality_rating == 4 %} selected{% endif %}>4 – Very helpful</option><option value="5"{% if x.quality_rating == 5 %} selected{% endif %}>5 – Excellent evidence</option></select>
+    <button class="b pr">Save rating</button>
+  </div>
+</form>
+{% endif %}
+
+{% if x.reporter_id == user.id and x.status == 'Pending' %}
+<div class="row no-print" style="justify-content:flex-start;margin-top:.75rem">
+  <a class="b pr" href="{% url 'edit_report' x.pk %}">Edit report</a>
+  <form method="post" action="{% url 'delete_report' x.pk %}" data-confirm="Delete this report? This cannot be undone." style="margin:0">{% csrf_token %}<button class="b rd">Delete report</button></form>
+</div>
+{% endif %}
+{% endblock %}

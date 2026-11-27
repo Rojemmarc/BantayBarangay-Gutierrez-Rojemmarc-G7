@@ -1,16 +1,55 @@
 {% extends 'base.html' %}{% load static %}{% block title %}New report · BantayBarangay{% endblock %}
 {% block vendor %}<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}"><script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>{% endblock %}
-{% block content %}<form class="c" method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}<h1>New report</h1>{% include 'partials/errors.html' %}
-<label for="category">Category</label><select id="category" name="category" required><option value="">Select…</option>{% for c in cats %}<option value="{{ c.pk }}"{% if v.category == c.pk|stringformat:"s" %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
-<p class="mu">⚠ Emergency is for fires, missing persons or imminent danger. Also call 911 or the barangay hotline.</p>
-<label for="title">Title</label><input id="title" name="title" value="{{ v.title }}" required minlength="3" maxlength="150">
-<label for="description">Description (at least 20 characters)</label><textarea id="description" name="description" rows="4" required minlength="20" maxlength="2000">{{ v.description }}</textarea>
-<label for="photos">Photos (JPG or PNG, 1 to 3, 5 MB each)</label><input id="photos" name="photos" type="file" accept="image/jpeg,image/png" multiple required>
-<label for="location_note">Landmark or address (optional)</label><input id="location_note" name="location_note" value="{{ v.location_note }}" maxlength="255">
-<label>Pin the location: click the map or enter coordinates</label><div class="map" data-map data-pick data-lat="10.3157" data-lng="123.8854" role="application" aria-label="Click the map to pin the location"></div>
-<p class="mu" id="mapStatus" role="status">Click the map to place a pin, or enter coordinates below. If map tiles do not load, coordinates can still be entered manually.</p>
-<div class="row"><div style="flex:1"><label for="latitude">Latitude</label><input id="latitude" name="latitude" type="number" inputmode="decimal" step="any" min="-90" max="90" value="{{ v.latitude }}" required></div><div style="flex:1"><label for="longitude">Longitude</label><input id="longitude" name="longitude" type="number" inputmode="decimal" step="any" min="-180" max="180" value="{{ v.longitude }}" required></div></div>
-<p class="mu" id="pinText">{% if v.latitude %}Pinned: {{ v.latitude }}, {{ v.longitude }}{% else %}No pin yet{% endif %}</p>
-<noscript><p class="er">Please enable JavaScript to pin the location on the map.</p></noscript>
-<label class="checkbox-row"><input type="checkbox" name="is_suspicious_activity"{% if v.is_suspicious_activity %} checked{% endif %}><span>Show me as Anonymous to other residents (Safety / suspicious activity only)</span></label>
-<button class="b pr" style="width:100%;margin-top:.75rem">Submit report</button></form>{% endblock %}
+{% block content %}
+<a href="{% url home_name %}">← Back to reports</a>
+<form class="c" style="margin-top:.5rem" method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+  <h1>New report</h1>
+  {% include 'partials/errors.html' %}
+
+  <label for="category">Category</label>
+  <select id="category" name="category" required{% if fe.category %} aria-invalid="true"{% endif %}><option value="">Select…</option>{% for c in cats %}<option value="{{ c.pk }}"{% if v.category == c.pk|stringformat:"s" %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  {% for e in fe.category %}<p class="field-error">{{ e }}</p>{% endfor %}
+  <p class="mu">⚠ Emergency is for fires, missing persons or imminent danger. Also call 911 or the barangay hotline.</p>
+
+  <label for="title">Title</label>
+  <input id="title" name="title" value="{{ v.title }}" required minlength="3" maxlength="150" placeholder="Short summary of the concern"{% if fe.title %} aria-invalid="true"{% endif %}>
+  {% for e in fe.title %}<p class="field-error">{{ e }}</p>{% endfor %}
+
+  <label for="description">Description (at least 20 characters)</label>
+  <textarea id="description" name="description" rows="4" required minlength="20" maxlength="2000" data-char-min="20" data-char-out="descCount" placeholder="Describe what happened, how severe it is, and any helpful details…"{% if fe.description %} aria-invalid="true"{% endif %}>{{ v.description }}</textarea>
+  <p class="field-hint" id="descCount">0 / 20 minimum characters</p>
+  {% for e in fe.description %}<p class="field-error">{{ e }}</p>{% endfor %}
+
+  <label for="photos">Photos (JPG or PNG, 1 to 3, up to 5 MB each — EXIF metadata stripped automatically)</label>
+  <input id="photos" name="photos" type="file" accept="image/jpeg,image/png" multiple required data-photo-input data-photo-preview="photoPreview" data-photo-status="photoStatus" data-max-files="3">
+  <p class="field-hint" id="photoStatus" role="status"></p>
+  <div id="photoPreview" class="preview-grid"></div>
+
+  <label for="location_note">Landmark or address (optional)</label>
+  <input id="location_note" name="location_note" value="{{ v.location_note }}" maxlength="255" placeholder="e.g., Near Tisa Public Market gate">
+
+  <div class="row" style="margin-top:.85rem">
+    <label style="margin:0">Pin the location: click the map, use GPS, or enter coordinates</label>
+    <button type="button" id="useLocationBtn" class="b sm">Use my current location</button>
+  </div>
+  <div class="map" style="margin-top:.4rem" data-map data-pick data-lat="10.3157" data-lng="123.8854" role="application" aria-label="Click the map to pin the location"></div>
+  <p class="mu" id="mapStatus" role="status">Click the map to place a pin, or enter coordinates below. If map tiles do not load, coordinates can still be entered manually.</p>
+  <div class="row">
+    <div style="flex:1">
+      <label for="latitude">Latitude</label>
+      <input id="latitude" name="latitude" type="number" inputmode="decimal" step="any" min="-90" max="90" value="{{ v.latitude }}" required{% if fe.latitude %} aria-invalid="true"{% endif %}>
+      {% for e in fe.latitude %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+    <div style="flex:1">
+      <label for="longitude">Longitude</label>
+      <input id="longitude" name="longitude" type="number" inputmode="decimal" step="any" min="-180" max="180" value="{{ v.longitude }}" required{% if fe.longitude %} aria-invalid="true"{% endif %}>
+      {% for e in fe.longitude %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+  </div>
+  <p class="mu" id="pinText">{% if v.latitude %}Pinned: {{ v.latitude }}, {{ v.longitude }}{% else %}No pin yet{% endif %}</p>
+  <noscript><p class="er">Please enable JavaScript to pin the location on the map.</p></noscript>
+
+  <label class="checkbox-row"><input type="checkbox" name="is_suspicious_activity"{% if v.is_suspicious_activity %} checked{% endif %}><span>Show me as Anonymous to other residents (Safety / suspicious activity only)</span></label>
+  <button class="b pr" style="width:100%;margin-top:.85rem">Submit report</button>
+</form>
+{% endblock %}

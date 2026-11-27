@@ -1,23 +1,36 @@
 """Django forms and business-rule validation for server-rendered workflows."""
 import re
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+from django.utils import timezone
 from PIL import Image, UnidentifiedImageError
-from .models import Category, Department, Report, STATUSES, TRANS, User
+from .models import (
+    ANNOUNCEMENT_TYPES,
+    Announcement,
+    Barangay,
+    Category,
+    Department,
+    Report,
+    STATUSES,
+    TRANS,
+    User,
+)
+from .services import strip_image_exif
 
 MAX_PHOTO_BYTES = 5 * 1024 * 1024
 ALLOWED_IMAGE_FORMATS = ('JPEG', 'PNG')
 PHONE_RE = re.compile(r'^[0-9+\-\s()]{7,20}$')
 
 
-def validate_uploaded_photos(uploaded_files, existing_count=0, remove_count=0):
-    """Validate uploaded report evidence images and total photo count (1 to 3, JPG/PNG, <= 5 MB)."""
+def validate_uploaded_photos(uploaded_files, existing_count=0, remove_count=0, min_total=1, max_total=3):
+    """Validate and EXIF-strip uploaded evidence images (JPG/PNG, <= 5 MB each)."""
     uploaded_files = [f for f in (uploaded_files or []) if f]
     remaining = max(0, existing_count - remove_count)
     total = remaining + len(uploaded_files)
-    if total < 1:
-        raise forms.ValidationError('At least 1 photo is required.')
-    if total > 3:
-        raise forms.ValidationError('You can attach at most 3 photos per report.')
+    if total < min_total:
+        raise forms.ValidationError(f'At least {min_total} photo is required.')
+    if total > max_total:
+        raise forms.ValidationError(f'You can attach at most {max_total} photos per report.')
 
     validated = []
     for f in uploaded_files:
@@ -33,8 +46,61 @@ def validate_uploaded_photos(uploaded_files, existing_count=0, remove_count=0):
             raise forms.ValidationError('Photos must be valid JPG or PNG images.')
         if fmt not in ALLOWED_IMAGE_FORMATS:
             raise forms.ValidationError('Photos must be JPG or PNG, up to 5 MB each.')
-        validated.append((f, fmt))
+        clean_file = strip_image_exif(f, fmt)
+        validated.append((clean_file, fmt))
     return validated
+
+
+class RegisterForm(forms.Form):
+    """Public Resident registration form with password strength & privacy consent validation."""
+
+    full_name = forms.CharField(min_length=2, max_length=150)
+    email = forms.EmailField(max_length=255)
+    password = forms.CharField(min_length=8, widget=forms.PasswordInput)
+    password2 = forms.CharField(widget=forms.PasswordInput)
+    barangay = forms.ModelChoiceField(queryset=Barangay.objects.all())
+    contact_number = forms.CharField(max_length=20, required=False)
+    consent = forms.BooleanField(
+        required=True,
+        error_messages={'required': 'You must accept the Terms and Privacy Policy.'},
+    )
+
+    def clean_full_name(self):
+        value = (self.cleaned_data.get('full_name') or '').strip()
+        if len(value) < 2:
+            raise forms.ValidationError('Full name must be at least 2 characters.')
+        return value
+
+    def clean_email(self):
+        value = (self.cleaned_data.get('email') or '').strip().lower()
+        if User.objects.filter(email__iexact=value).exists():
+            raise forms.ValidationError('This email is already registered.')  # BR-01
+        return value
+
+    def clean_contact_number(self):
+        value = (self.cleaned_data.get('contact_number') or '').strip()
+        if value and not PHONE_RE.match(value):
+            raise forms.ValidationError('Enter a valid contact number (7 to 20 digits/symbols).')
+        return value
+
+    def clean(self):
+        cleaned = super().clean()
+        password = cleaned.get('password')
+        password2 = cleaned.get('password2')
+        if password and password2 and password != password2:
+            self.add_error('password2', 'Passwords do not match.')
+        elif password:
+            try:
+                validate_password(
+                    password,
+                    User(
+                        email=cleaned.get('email', ''),
+                        full_name=cleaned.get('full_name', ''),
+                    ),
+                )
+            except forms.ValidationError as exc:
+                self.add_error('password', exc)
+        return cleaned
 
 
 class ProfileForm(forms.ModelForm):
@@ -131,7 +197,7 @@ class ReportForm(forms.ModelForm):
 
         existing_count = 0
         if self.instance and self.instance.pk:
-            existing_photos = list(self.instance.photos.all())
+            existing_photos = list(self.instance.photos.filter(is_resolution_proof=False))
             existing_count = len(existing_photos)
             self.photos_to_remove = [p for p in existing_photos if str(p.pk) in self.remove_photo_ids]
 
@@ -148,16 +214,18 @@ class ReportForm(forms.ModelForm):
 
 
 class ReportTransitionForm(forms.Form):
-    """Validates official/staff status transitions and assignment rules (BR-13 to BR-16)."""
+    """Validates official/staff status transitions, assignment rules, and optional resolution proof."""
 
     status = forms.ChoiceField(choices=[(s, s) for s in STATUSES])
     department = forms.ModelChoiceField(queryset=Department.objects.none(), required=False)
     assigned_to = forms.ModelChoiceField(queryset=User.objects.none(), required=False)
     comment = forms.CharField(max_length=1000, required=False)
 
-    def __init__(self, *args, report, user, **kwargs):
+    def __init__(self, *args, report, user, resolution_photos=None, **kwargs):
         self.report = report
         self.user = user
+        self.resolution_photos = resolution_photos or []
+        self.validated_resolution_photos = []
         super().__init__(*args, **kwargs)
         self.fields['department'].queryset = Department.objects.filter(barangay=report.barangay)
         self.fields['assigned_to'].queryset = User.objects.filter(
@@ -183,6 +251,40 @@ class ReportTransitionForm(forms.Form):
             raise forms.ValidationError('Assign a department first.')
         if new_status in ('Resolved', 'Rejected') and len(comment) < 5:
             raise forms.ValidationError('A comment explaining the reason is required.')
+        if new_status == 'Resolved' and self.resolution_photos:
+            try:
+                self.validated_resolution_photos = validate_uploaded_photos(
+                    self.resolution_photos,
+                    existing_count=0,
+                    remove_count=0,
+                    min_total=0,
+                    max_total=2,
+                )
+            except forms.ValidationError as exc:
+                self.add_error(None, exc)
+        return cleaned
+
+
+class ReportReassignForm(forms.Form):
+    """Allows Officials to reassign an active Assigned/In Progress report to another department or staff."""
+
+    department = forms.ModelChoiceField(queryset=Department.objects.none())
+    assigned_to = forms.ModelChoiceField(queryset=User.objects.none())
+    note = forms.CharField(max_length=500, required=False)
+
+    def __init__(self, *args, report, **kwargs):
+        self.report = report
+        super().__init__(*args, **kwargs)
+        self.fields['department'].queryset = Department.objects.filter(barangay=report.barangay)
+        self.fields['assigned_to'].queryset = User.objects.filter(
+            barangay=report.barangay, role='Staff', is_active=True
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.report.status not in ('Assigned', 'In Progress'):
+            raise forms.ValidationError('Only Assigned or In Progress reports can be reassigned.')
+        cleaned['note'] = (cleaned.get('note') or '').strip()
         return cleaned
 
 
@@ -222,4 +324,47 @@ class ReportRatingForm(forms.Form):
         cleaned = super().clean()
         if self.report.status != 'Resolved':
             raise forms.ValidationError('Only Resolved reports can be rated 1 to 5.')
+        return cleaned
+
+
+class AnnouncementForm(forms.ModelForm):
+    """Validates barangay bulletin announcements, advisories, and events (create & edit)."""
+
+    type = forms.ChoiceField(choices=[(t, t) for t in ANNOUNCEMENT_TYPES])
+    event_date = forms.DateField(required=False)
+    expires_at = forms.DateTimeField(
+        required=False,
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d'],
+    )
+
+    class Meta:
+        model = Announcement
+        fields = ['title', 'type', 'event_date', 'expires_at', 'body']
+
+    def clean_title(self):
+        value = (self.cleaned_data.get('title') or '').strip()
+        if len(value) < 3:
+            raise forms.ValidationError('Title must be at least 3 characters.')
+        return value
+
+    def clean_body(self):
+        value = (self.cleaned_data.get('body') or '').strip()
+        if len(value) < 5:
+            raise forms.ValidationError('Message must be at least 5 characters.')
+        if len(value) > 2000:
+            raise forms.ValidationError('Message must be 2000 characters or fewer.')
+        return value
+
+    def clean(self):
+        cleaned = super().clean()
+        ann_type = cleaned.get('type')
+        event_date = cleaned.get('event_date')
+        expires_at = cleaned.get('expires_at')
+
+        if ann_type == 'Event' and (not event_date or event_date < timezone.localdate()):
+            self.add_error('event_date', 'Events need a date that is not in the past.')  # BR-25
+        if ann_type != 'Event':
+            cleaned['event_date'] = None
+        if expires_at and expires_at <= timezone.now():
+            self.add_error('expires_at', 'Expiry date and time must be in the future.')
         return cleaned

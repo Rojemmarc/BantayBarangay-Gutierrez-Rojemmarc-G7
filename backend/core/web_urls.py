@@ -1,7 +1,31 @@
 from django.urls import path
 from . import web as w
-urlpatterns=[path('',w.index,name='index'),path('login/',w.login_view,name='login'),path('logout/',w.logout_view,name='logout'),path('register/',w.register_view,name='register'),path('profile/',w.profile,name='profile'),
- path('forgot/',w.forgot,name='forgot'),path('legal/',w.legal,name='legal'),path('app/',w.home,name='app'),path('official/',w.home,name='official'),path('lgu/',w.lgu_dashboard,name='lgu_dashboard'),
- path('app/new/',w.new_report,name='new_report'),path('app/alerts/',w.alerts,name='alerts'),path('reports/<int:pk>/',w.detail,name='detail'),
- path('reports/<int:pk>/edit/',w.edit_report,name='edit_report'),path('reports/<int:pk>/delete/',w.delete_report,name='delete_report'),path('reports/<int:pk>/transition/',w.transition,name='transition'),path('reports/<int:pk>/comment/',w.comment,name='comment'),path('reports/<int:pk>/rate/',w.rate_report,name='rate_report'),
- path('bulletin/',w.bulletin,name='bulletin'),path('bulletin/<int:pk>/delete/',w.ann_delete,name='ann_delete'),path('photos/<int:pk>/',w.photo,name='photo')]
+
+urlpatterns = [
+    path('', w.index, name='index'),
+    path('login/', w.login_view, name='login'),
+    path('logout/', w.logout_view, name='logout'),
+    path('register/', w.register_view, name='register'),
+    path('profile/', w.profile, name='profile'),
+    path('profile/password/', w.change_password, name='change_password'),
+    path('forgot/', w.forgot, name='forgot'),
+    path('legal/', w.legal, name='legal'),
+    path('app/', w.home, name='app'),
+    path('official/', w.home, name='official'),
+    path('official/export.csv', w.export_reports_csv, name='export_reports_csv'),
+    path('lgu/', w.lgu_dashboard, name='lgu_dashboard'),
+    path('lgu/export.csv', w.export_lgu_csv, name='export_lgu_csv'),
+    path('app/new/', w.new_report, name='new_report'),
+    path('app/alerts/', w.alerts, name='alerts'),
+    path('reports/<int:pk>/', w.detail, name='detail'),
+    path('reports/<int:pk>/edit/', w.edit_report, name='edit_report'),
+    path('reports/<int:pk>/delete/', w.delete_report, name='delete_report'),
+    path('reports/<int:pk>/transition/', w.transition, name='transition'),
+    path('reports/<int:pk>/reassign/', w.reassign_report, name='reassign_report'),
+    path('reports/<int:pk>/comment/', w.comment, name='comment'),
+    path('reports/<int:pk>/rate/', w.rate_report, name='rate_report'),
+    path('bulletin/', w.bulletin, name='bulletin'),
+    path('bulletin/<int:pk>/edit/', w.ann_edit, name='ann_edit'),
+    path('bulletin/<int:pk>/delete/', w.ann_delete, name='ann_delete'),
+    path('photos/<int:pk>/', w.photo, name='photo'),
+]
