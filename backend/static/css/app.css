@@ -883,6 +883,169 @@ form[data-busy] button:disabled { opacity: 0.6; cursor: wait; }
   }
 }
 
+/* Public Landing Page */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.95fr);
+  align-items: center;
+  gap: 1.75rem;
+  padding: clamp(1.25rem, 4vw, 2.75rem) 0 1.5rem;
+}
+
+.hero-pill {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--bd);
+  background: var(--cd);
+  color: var(--pt);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.hero h1 {
+  font-size: clamp(1.85rem, 4vw, 2.75rem);
+  line-height: 1.15;
+  margin-bottom: 0.85rem;
+}
+
+.hero-lead {
+  margin: 0;
+  color: var(--mu);
+  font-size: 1.04rem;
+  max-width: 56ch;
+}
+
+.hero-panel {
+  margin-bottom: 0;
+}
+
+.lifecycle-steps {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.lifecycle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.landing-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--bd);
+  text-align: center;
+}
+
+.landing-metrics b {
+  display: block;
+  font-family: Poppins, sans-serif;
+  font-size: 1.25rem;
+  color: var(--pt);
+}
+
+.landing-metrics span {
+  font-size: 0.78rem;
+}
+
+.landing-section {
+  padding-top: 1.5rem;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+
+.feature-grid .c,
+.role-grid .c {
+  margin-bottom: 0;
+}
+
+.feature-grid h3,
+.landing-steps h3 {
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.feature-grid p,
+.landing-steps p,
+.role-grid p {
+  margin: 0;
+}
+
+.step-num {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  margin-bottom: 0.5rem;
+  border-radius: 50%;
+  background: var(--p);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.role-grid strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--pt);
+}
+
+.landing-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.75rem;
+  border-left: 4px solid var(--g);
+}
+
+@media (max-width: 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .landing-nav {
+    display: none;
+  }
+
+  .feature-grid,
+  .landing-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Clean print layout for physical barangay blotter / logbook records */
 @media print {
   header,

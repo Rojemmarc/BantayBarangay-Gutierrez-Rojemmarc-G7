@@ -14,7 +14,7 @@
 <div class="user-tools"><button type="button" class="tg" id="themeToggle" aria-label="Switch to dark mode">☾</button>
 <a class="b{% if n == 'profile' or n == 'change_password' %} active{% endif %}" href="{% url 'profile' %}">Profile</a>
 <form method="post" action="{% url 'logout' %}" data-nobusy>{% csrf_token %}<button class="b">Log out</button></form></div>{% endwith %}</header>
-{% else %}<button type="button" class="tg auth-theme-toggle" id="themeToggle" aria-label="Switch to dark mode">☾</button>{% endif %}
+{% else %}{% block guest_header %}<button type="button" class="tg auth-theme-toggle" id="themeToggle" aria-label="Switch to dark mode">☾</button>{% endblock %}{% endif %}
 <main id="mainContent" class="{% if user.is_authenticated %}with-bottom-nav {% endif %}{% block mainclass %}{% endblock %}">
 {% for m in messages %}<div class="c msg-{{ m.level_tag }}" role="status" aria-live="polite">{{ m }}</div>{% endfor %}
 {% block content %}{% endblock %}

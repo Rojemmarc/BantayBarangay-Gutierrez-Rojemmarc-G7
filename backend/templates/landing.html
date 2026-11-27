@@ -1,0 +1,129 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}BantayBarangay · Community Concern &amp; Incident Reporting{% endblock %}
+{% block guest_header %}
+<header class="app-header landing-header">
+  <div class="brand-block">
+    <a class="brand-name" href="{% url 'index' %}" aria-label="BantayBarangay home">
+      <img class="brand-logo" src="{% static 'img/bantaybarangay-logo.png' %}?v=2" alt="">
+      <span class="brand-bantay">Bantay</span><span class="brand-barangay">Barangay</span>
+    </a>
+  </div>
+  <nav class="main-nav landing-nav" aria-label="Landing navigation">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="#roles">Roles</a>
+  </nav>
+  <div class="user-tools">
+    <button type="button" class="tg" id="themeToggle" aria-label="Switch to dark mode">☾</button>
+    <a class="b" href="{% url 'login' %}">Log in</a>
+    <a class="b pr" href="{% url 'register' %}">Create account</a>
+  </div>
+</header>
+{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="hero-pill">Civic Concern &amp; Incident Reporting Platform</span>
+    <h1>Report barangay concerns.<br>Track real action.</h1>
+    <p class="hero-lead">BantayBarangay connects residents, community volunteers, barangay officials, field staff, and LGU analysts in one transparent workflow — from photo-verified report submission to documented resolution.</p>
+    <div class="row" style="justify-content:flex-start;margin-top:1.25rem">
+      <a class="b gd" href="{% url 'register' %}">Get started as a Resident</a>
+      <a class="b" href="{% url 'login' %}">Log in to your account</a>
+    </div>
+    <p class="mu" style="margin-top:.85rem">For life-threatening emergencies, always call <strong>911</strong> or your barangay hotline directly.</p>
+  </div>
+
+  <div class="c hero-panel" aria-label="Platform overview">
+    <div class="row" style="margin-bottom:.75rem">
+      <strong>Structured resolution lifecycle</strong>
+      <span class="bg st-resolved">Auditable</span>
+    </div>
+    <div class="lifecycle-steps">
+      <div class="lifecycle-item"><span class="bg st-pending">Pending</span><span class="mu">Submitted with photo &amp; map pin</span></div>
+      <div class="lifecycle-item"><span class="bg st-assigned">Assigned</span><span class="mu">Routed to department &amp; staff</span></div>
+      <div class="lifecycle-item"><span class="bg st-in-progress">In Progress</span><span class="mu">Field action &amp; official updates</span></div>
+      <div class="lifecycle-item"><span class="bg st-resolved">Resolved</span><span class="mu">Verified closure &amp; quality rating</span></div>
+    </div>
+    <div class="landing-metrics">
+      <div><b>{{ metrics.barangays }}</b><span class="mu">Barangay{{ metrics.barangays|pluralize }}</span></div>
+      <div><b>{{ metrics.categories }}</b><span class="mu">Categories</span></div>
+      <div><b>{{ metrics.total_reports }}</b><span class="mu">Reports</span></div>
+      <div><b>{{ metrics.resolved_reports }}</b><span class="mu">Resolved</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="landing-section">
+  <h2>Built for fast, accountable barangay response</h2>
+  <p class="mu">Everything needed to report neighborhood issues clearly and keep communities informed.</p>
+  <div class="feature-grid">
+    <article class="c">
+      <h3>Photo &amp; Map Pin Evidence</h3>
+      <p class="mu">Attach up to 3 JPG/PNG photos with automatic EXIF metadata stripping and pin exact locations using Leaflet maps or device GPS.</p>
+    </article>
+    <article class="c">
+      <h3>Real-Time Status History</h3>
+      <p class="mu">Every transition is logged with timestamps and official updates, sending in-app alerts to residents and assigned field staff.</p>
+    </article>
+    <article class="c">
+      <h3>Emergency Prioritization</h3>
+      <p class="mu">Urgent reports are highlighted at the top of barangay queues and immediately trigger alerts for active barangay officials.</p>
+    </article>
+    <article class="c">
+      <h3>Privacy-First Reporting</h3>
+      <p class="mu">Designed around Data Privacy Act (RA 10173) principles with barangay isolation and anonymous Safety reporting options.</p>
+    </article>
+    <article class="c">
+      <h3>Community Bulletin &amp; Recognition</h3>
+      <p class="mu">Officials publish advisories, events, and announcements while top civic reporters earn points on the barangay leaderboard.</p>
+    </article>
+    <article class="c">
+      <h3>Anonymized LGU Analytics</h3>
+      <p class="mu">Local government units review cross-barangay aggregate totals and CSV exports without exposing resident personal data.</p>
+    </article>
+  </div>
+</section>
+
+<section id="how-it-works" class="landing-section">
+  <h2>How it works</h2>
+  <div class="g3 landing-steps">
+    <div class="c" style="text-align:left">
+      <span class="step-num">1</span>
+      <h3>Submit a concern</h3>
+      <p class="mu">Log in, choose a category, describe the issue, attach evidence photos, and pin the location on the map.</p>
+    </div>
+    <div class="c" style="text-align:left">
+      <span class="step-num">2</span>
+      <h3>Assign &amp; coordinate</h3>
+      <p class="mu">Barangay officials assign the right department and active staff member while volunteers can share community updates.</p>
+    </div>
+    <div class="c" style="text-align:left">
+      <span class="step-num">3</span>
+      <h3>Resolve &amp; verify</h3>
+      <p class="mu">Staff document the fix with comments and optional resolution proof photos, and residents see the full timeline.</p>
+    </div>
+  </div>
+</section>
+
+<section id="roles" class="landing-section">
+  <h2>Dedicated workspaces for every role</h2>
+  <div class="role-grid">
+    <div class="c"><strong>Resident</strong><p class="mu">Submit, track, edit, or delete own Pending reports and receive status alerts.</p></div>
+    <div class="c"><strong>Volunteer</strong><p class="mu">Submit concerns and post community coordination updates on active barangay cases.</p></div>
+    <div class="c"><strong>Barangay Official</strong><p class="mu">Triage barangay queues, assign departments/staff, view incident maps, and export CSV summaries.</p></div>
+    <div class="c"><strong>Barangay Staff</strong><p class="mu">Work from a focused assigned-case queue, update progress, and upload resolution proof.</p></div>
+    <div class="c"><strong>LGU Analyst</strong><p class="mu">Monitor cross-barangay aggregate breakdowns by status, category, and barangay.</p></div>
+  </div>
+</section>
+
+<section class="c landing-cta">
+  <div>
+    <h2 style="margin:0 0 .35rem">Ready to strengthen your barangay?</h2>
+    <p class="mu" style="margin:0">Create a free resident account in under a minute or sign in with your barangay credentials.</p>
+  </div>
+  <div class="row" style="gap:.5rem">
+    <a class="b gd" href="{% url 'register' %}">Create account</a>
+    <a class="b pr" href="{% url 'login' %}">Log in</a>
+  </div>
+</section>
+{% endblock %}
