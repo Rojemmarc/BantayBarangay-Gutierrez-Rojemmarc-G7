@@ -1,15 +1,82 @@
-{% extends 'base.html' %}{% block title %}{% if user.can_manage_reports %}Reports dashboard{% elif user.is_staff_member %}Staff workspace{% else %}Home{% endif %} · BantayBarangay{% endblock %}
-{% block content %}<div class="row"><div><h1>{% if user.can_manage_reports %}Reports dashboard{% elif user.is_staff_member %}Assigned reports{% else %}Hello, {{ user.full_name|truncatechars:30 }}{% endif %}</h1><p class="mu">{{ user.barangay }}</p></div>
-{% if user.is_reporter %}<a class="b gd" href="{% url 'new_report' %}">+ Report Now</a>{% endif %}</div>
+{% extends 'base.html' %}{% load static %}
+{% block title %}{% if user.can_manage_reports %}Reports dashboard{% elif user.is_staff_member %}Staff workspace{% else %}Home{% endif %} · BantayBarangay{% endblock %}
+{% block vendor %}{% if user.can_manage_reports and map_points_count %}<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}"><script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>{% endif %}{% endblock %}
+{% block content %}
+<div class="row">
+  <div>
+    <h1>{% if user.can_manage_reports %}Reports dashboard{% elif user.is_staff_member %}Assigned reports{% else %}Hello, {{ user.full_name|truncatechars:30 }}{% endif %}</h1>
+    <p class="mu">{{ user.barangay }}</p>
+  </div>
+  <div class="row" style="gap:.5rem">
+    {% if user.can_manage_reports %}<a class="b" href="{% url 'export_reports_csv' %}{% if qs %}?{{ qs }}{% endif %}">Export CSV</a>{% endif %}
+    {% if user.is_reporter %}<a class="b gd" href="{% url 'new_report' %}">+ Report Now</a>{% endif %}
+  </div>
+</div>
+
 {% if stats.emergencies %}<div class="c em"><b>⚠ {{ stats.emergencies }} active emergency report{{ stats.emergencies|pluralize }}</b></div>{% endif %}
-<div class="g3"><div class="c"><b>{{ stats.pending }}</b><span class="mu">Pending</span></div><div class="c"><b>{{ stats.progress }}</b><span class="mu">In progress</span></div><div class="c"><b>{{ stats.resolved }}</b><span class="mu">Resolved</span></div></div>
-{% if user.can_manage_reports %}<p class="mu">Resolved within 7 days: {{ stats.pct7 }}% of all reports (target 70%)</p>{% endif %}
-<form class="c" method="get" data-nobusy><label for="q">Search</label><input id="q" name="q" type="search" value="{{ g.q }}" placeholder="Search reports">
-<div class="row" style="align-items:end"><div style="flex:1"><label for="category">Category</label><select id="category" name="category"><option value="">All</option>{% for c in cats %}<option{% if g.category == c.name %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
-<div style="flex:1"><label for="status">Status</label><select id="status" name="status"><option value="">All</option>{% for s in statuses %}<option{% if g.status == s %} selected{% endif %}>{{ s }}</option>{% endfor %}</select></div></div>
-<div class="row"><div style="flex:1"><label for="date_from">From</label><input id="date_from" name="date_from" type="date" value="{{ g.date_from }}"></div><div style="flex:1"><label for="date_to">To</label><input id="date_to" name="date_to" type="date" value="{{ g.date_to }}"></div></div>
-{% if user.is_reporter %}<label class="checkbox-row"><input type="checkbox" name="mine" value="1"{% if g.mine == '1' %} checked{% endif %}><span>Only my reports</span></label>{% endif %}
-<div class="row" style="justify-content:flex-start;margin-top:.75rem"><button class="b pr">Apply</button>{% if filtered %}<a class="b" href="{% url home_name %}">Clear</a>{% endif %}</div></form>
+
+<div class="g3">
+  <div class="c"><b>{{ stats.pending }}</b><span class="mu">Pending</span></div>
+  <div class="c"><b>{{ stats.progress }}</b><span class="mu">In progress</span></div>
+  <div class="c"><b>{{ stats.resolved }}</b><span class="mu">Resolved</span></div>
+</div>
+
+{% if user.can_manage_reports %}
+<p class="mu">Resolved within 7 days: {{ stats.pct7 }}% of all reports (target 70%)</p>
+{% if map_points_count %}
+<details class="c filter-panel" style="margin-top:0">
+  <summary>Barangay active incident map ({{ map_points_count }} active)</summary>
+  <div class="map" style="margin-top:.75rem" data-overview-map role="region" aria-label="Active barangay reports map"></div>
+  <script id="mapPointsData" type="application/json">{{ map_points_json|safe }}</script>
+</details>
+{% endif %}
+{% endif %}
+
+<nav class="chips" aria-label="Quick status filters">
+  <a class="chip{% if not g.status and not g.emergency %} active{% endif %}" href="{% url home_name %}">All</a>
+  {% if stats.emergencies %}<a class="chip em-chip{% if g.emergency == '1' %} active{% endif %}" href="{% url home_name %}?emergency=1">⚠ Emergency ({{ stats.emergencies }})</a>{% endif %}
+  {% for s in statuses %}<a class="chip{% if g.status == s %} active{% endif %}" href="{% url home_name %}?status={{ s|urlencode }}">{{ s }}</a>{% endfor %}
+</nav>
+
+<form class="c" method="get" data-nobusy>
+  <div class="row" style="align-items:end">
+    <div style="flex:1;min-width:200px">
+      <label for="q" style="margin-top:0">Search</label>
+      <input id="q" name="q" type="search" value="{{ g.q }}" placeholder="Search title, description, or landmark">
+    </div>
+    <button class="b pr">Search</button>
+    {% if filtered %}<a class="b" href="{% url home_name %}">Clear</a>{% endif %}
+  </div>
+
+  <details class="filter-panel"{% if advanced_filtered %} open{% endif %}>
+    <summary>More filters (category, status, date range)</summary>
+    <div class="row" style="align-items:end;margin-top:.5rem">
+      <div style="flex:1;min-width:160px">
+        <label for="category">Category</label>
+        <select id="category" name="category"><option value="">All</option>{% for c in cats %}<option{% if g.category == c.name %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+      </div>
+      <div style="flex:1;min-width:160px">
+        <label for="status">Status</label>
+        <select id="status" name="status"><option value="">All</option>{% for s in statuses %}<option{% if g.status == s %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex:1;min-width:160px"><label for="date_from">From</label><input id="date_from" name="date_from" type="date" value="{{ g.date_from }}"></div>
+      <div style="flex:1;min-width:160px"><label for="date_to">To</label><input id="date_to" name="date_to" type="date" value="{{ g.date_to }}"></div>
+    </div>
+    {% if user.role == 'Volunteer' %}<label class="checkbox-row"><input type="checkbox" name="mine" value="1"{% if g.mine == '1' %} checked{% endif %}><span>Only my reports</span></label>{% endif %}
+    <div class="row" style="justify-content:flex-start;margin-top:.75rem"><button class="b pr">Apply filters</button></div>
+  </details>
+</form>
+
 {% for x in page %}{% include 'partials/card.html' %}{% empty %}
 {% if filtered %}{% include 'partials/empty.html' with title='No reports found' message='Try changing your search or filters.' %}{% elif user.is_official %}{% include 'partials/empty.html' with title='No reports yet' message='There are no reports in your current work queue.' %}{% else %}{% url 'new_report' as nr %}{% include 'partials/empty.html' with title='No reports yet' message='Be the first to report an issue in your barangay.' href=nr cta='Submit a report' %}{% endif %}{% endfor %}
-{% if page.has_other_pages %}<div class="row" style="margin-top:.5rem">{% if page.has_previous %}<a class="b" href="?{{ qs }}&page={{ page.previous_page_number }}">← Newer</a>{% else %}<span></span>{% endif %}<span class="mu">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a class="b" href="?{{ qs }}&page={{ page.next_page_number }}">Older →</a>{% endif %}</div>{% endif %}{% endblock %}
+
+{% if page.has_other_pages %}
+<div class="row" style="margin-top:.5rem">
+  {% if page.has_previous %}<a class="b" href="?{{ qs }}&page={{ page.previous_page_number }}">← Newer</a>{% else %}<span></span>{% endif %}
+  <span class="mu">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a class="b" href="?{{ qs }}&page={{ page.next_page_number }}">Older →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

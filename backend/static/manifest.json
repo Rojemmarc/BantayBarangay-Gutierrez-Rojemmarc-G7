@@ -1,0 +1,17 @@
+{
+  "name": "BantayBarangay",
+  "short_name": "BantayBarangay",
+  "description": "Community concern and incident reporting platform for Philippine barangays.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#1e3a5f",
+  "icons": [
+    {
+      "src": "/static/img/bantaybarangay-logo.png?v=2",
+      "sizes": "212x328",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

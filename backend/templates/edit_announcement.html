@@ -1,0 +1,42 @@
+{% extends 'base.html' %}{% block title %}Edit announcement · BantayBarangay{% endblock %}
+{% block content %}
+<a href="{% url 'bulletin' %}">← Back to bulletin</a>
+<form class="c" style="margin-top:.5rem" method="post" novalidate>{% csrf_token %}
+  <h1>Edit announcement</h1>
+  {% include 'partials/errors.html' %}
+
+  <label for="title">Title</label>
+  <input id="title" name="title" value="{{ v.title }}" required minlength="3" maxlength="150"{% if fe.title %} aria-invalid="true"{% endif %}>
+  {% for e in fe.title %}<p class="field-error">{{ e }}</p>{% endfor %}
+
+  <div class="row">
+    <div style="flex:1;min-width:160px">
+      <label for="type">Type</label>
+      <select id="type" name="type">
+        <option{% if v.type == 'Announcement' %} selected{% endif %}>Announcement</option>
+        <option{% if v.type == 'Advisory' %} selected{% endif %}>Advisory</option>
+        <option{% if v.type == 'Event' %} selected{% endif %}>Event</option>
+      </select>
+    </div>
+    <div style="flex:1;min-width:160px">
+      <label for="event_date">Event date (events only)</label>
+      <input id="event_date" name="event_date" type="date" value="{{ v.event_date }}"{% if fe.event_date %} aria-invalid="true"{% endif %}>
+      {% for e in fe.event_date %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+    <div style="flex:1;min-width:180px">
+      <label for="expires_at">Expires at (optional)</label>
+      <input id="expires_at" name="expires_at" type="datetime-local" value="{{ v.expires_at }}"{% if fe.expires_at %} aria-invalid="true"{% endif %}>
+      {% for e in fe.expires_at %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+  </div>
+
+  <label for="body">Message</label>
+  <textarea id="body" name="body" rows="4" required minlength="5" maxlength="2000"{% if fe.body %} aria-invalid="true"{% endif %}>{{ v.body }}</textarea>
+  {% for e in fe.body %}<p class="field-error">{{ e }}</p>{% endfor %}
+
+  <div class="row" style="justify-content:flex-start;margin-top:.85rem">
+    <button class="b pr">Save changes</button>
+    <a class="b" href="{% url 'bulletin' %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

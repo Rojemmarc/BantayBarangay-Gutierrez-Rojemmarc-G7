@@ -1,18 +1,58 @@
 {% extends 'base.html' %}{% load static %}{% block title %}Edit report · BantayBarangay{% endblock %}
 {% block vendor %}<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}"><script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>{% endblock %}
-{% block content %}<a href="{% url 'detail' x.pk %}">← Back to report</a>
-<form class="c" style="margin-top:.5rem" method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}<h1>Edit report</h1><p class="mu">Only Pending reports can be edited. At least 1 photo must remain attached.</p>{% include 'partials/errors.html' %}
-<label for="category">Category</label><select id="category" name="category" required><option value="">Select…</option>{% for c in cats %}<option value="{{ c.pk }}"{% if v.category == c.pk|stringformat:"s" %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
-<p class="mu">⚠ Emergency is for fires, missing persons or imminent danger. Also call 911 or the barangay hotline.</p>
-<label for="title">Title</label><input id="title" name="title" value="{{ v.title }}" required minlength="3" maxlength="150">
-<label for="description">Description (at least 20 characters)</label><textarea id="description" name="description" rows="4" required minlength="20" maxlength="2000">{{ v.description }}</textarea>
-<label>Current photos ({{ x.photos.count }}/3)</label>
-<div class="photos">{% for p in x.photos.all %}<div><img src="{% url 'photo' p.pk %}" alt="Report evidence" loading="lazy"><label class="checkbox-row"><input type="checkbox" name="remove_photos" value="{{ p.pk }}"><span>Remove photo</span></label></div>{% endfor %}</div>
-<label for="photos">Add photos (optional — JPG or PNG, max 3 total, 5 MB each)</label><input id="photos" name="photos" type="file" accept="image/jpeg,image/png" multiple>
-<label for="location_note">Landmark or address (optional)</label><input id="location_note" name="location_note" value="{{ v.location_note }}" maxlength="255">
-<label>Pin the location: click the map or enter coordinates</label><div class="map" data-map data-pick data-lat="{{ v.latitude|default:'10.3157' }}" data-lng="{{ v.longitude|default:'123.8854' }}" role="application" aria-label="Click the map to pin the location"></div>
-<p class="mu" id="mapStatus" role="status">Click the map to adjust the pin, or edit the coordinates below.</p>
-<div class="row"><div style="flex:1"><label for="latitude">Latitude</label><input id="latitude" name="latitude" type="number" inputmode="decimal" step="any" min="-90" max="90" value="{{ v.latitude }}" required></div><div style="flex:1"><label for="longitude">Longitude</label><input id="longitude" name="longitude" type="number" inputmode="decimal" step="any" min="-180" max="180" value="{{ v.longitude }}" required></div></div>
-<p class="mu" id="pinText">{% if v.latitude %}Pinned: {{ v.latitude }}, {{ v.longitude }}{% else %}No pin yet{% endif %}</p>
-<label class="checkbox-row"><input type="checkbox" name="is_suspicious_activity"{% if v.is_suspicious_activity %} checked{% endif %}><span>Show me as Anonymous to other residents (Safety / suspicious activity only)</span></label>
-<div class="row" style="justify-content:flex-start;margin-top:.75rem"><button class="b pr">Save changes</button><a class="b" href="{% url 'detail' x.pk %}">Cancel</a></div></form>{% endblock %}
+{% block content %}
+<a href="{% url 'detail' x.pk %}">← Back to report</a>
+<form class="c" style="margin-top:.5rem" method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+  <h1>Edit report</h1>
+  <p class="mu">Only Pending reports can be edited. At least 1 photo must remain attached.</p>
+  {% include 'partials/errors.html' %}
+
+  <label for="category">Category</label>
+  <select id="category" name="category" required{% if fe.category %} aria-invalid="true"{% endif %}><option value="">Select…</option>{% for c in cats %}<option value="{{ c.pk }}"{% if v.category == c.pk|stringformat:"s" %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  {% for e in fe.category %}<p class="field-error">{{ e }}</p>{% endfor %}
+  <p class="mu">⚠ Emergency is for fires, missing persons or imminent danger. Also call 911 or the barangay hotline.</p>
+
+  <label for="title">Title</label>
+  <input id="title" name="title" value="{{ v.title }}" required minlength="3" maxlength="150"{% if fe.title %} aria-invalid="true"{% endif %}>
+  {% for e in fe.title %}<p class="field-error">{{ e }}</p>{% endfor %}
+
+  <label for="description">Description (at least 20 characters)</label>
+  <textarea id="description" name="description" rows="4" required minlength="20" maxlength="2000" data-char-min="20" data-char-out="descCount"{% if fe.description %} aria-invalid="true"{% endif %}>{{ v.description }}</textarea>
+  <p class="field-hint" id="descCount"></p>
+  {% for e in fe.description %}<p class="field-error">{{ e }}</p>{% endfor %}
+
+  <label>Current photos ({{ evidence_photos|length }}/3)</label>
+  <div class="photos">{% for p in evidence_photos %}<div class="photo-card"><img src="{% url 'photo' p.pk %}" alt="Report evidence" loading="lazy" data-lightbox><label class="checkbox-row"><input type="checkbox" name="remove_photos" value="{{ p.pk }}"><span>Remove photo</span></label></div>{% endfor %}</div>
+
+  <label for="photos">Add photos (optional — JPG or PNG, max 3 total, 5 MB each)</label>
+  <input id="photos" name="photos" type="file" accept="image/jpeg,image/png" multiple data-photo-input data-photo-preview="photoPreview" data-photo-status="photoStatus" data-max-files="3">
+  <p class="field-hint" id="photoStatus" role="status"></p>
+  <div id="photoPreview" class="preview-grid"></div>
+
+  <label for="location_note">Landmark or address (optional)</label>
+  <input id="location_note" name="location_note" value="{{ v.location_note }}" maxlength="255">
+
+  <div class="row" style="margin-top:.85rem">
+    <label style="margin:0">Pin the location: click the map, use GPS, or edit coordinates</label>
+    <button type="button" id="useLocationBtn" class="b sm">Use my current location</button>
+  </div>
+  <div class="map" style="margin-top:.4rem" data-map data-pick data-lat="{{ v.latitude|default:'10.3157' }}" data-lng="{{ v.longitude|default:'123.8854' }}" role="application" aria-label="Click the map to pin the location"></div>
+  <p class="mu" id="mapStatus" role="status">Click the map to adjust the pin, or edit the coordinates below.</p>
+  <div class="row">
+    <div style="flex:1">
+      <label for="latitude">Latitude</label>
+      <input id="latitude" name="latitude" type="number" inputmode="decimal" step="any" min="-90" max="90" value="{{ v.latitude }}" required{% if fe.latitude %} aria-invalid="true"{% endif %}>
+      {% for e in fe.latitude %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+    <div style="flex:1">
+      <label for="longitude">Longitude</label>
+      <input id="longitude" name="longitude" type="number" inputmode="decimal" step="any" min="-180" max="180" value="{{ v.longitude }}" required{% if fe.longitude %} aria-invalid="true"{% endif %}>
+      {% for e in fe.longitude %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+  </div>
+  <p class="mu" id="pinText">{% if v.latitude %}Pinned: {{ v.latitude }}, {{ v.longitude }}{% else %}No pin yet{% endif %}</p>
+
+  <label class="checkbox-row"><input type="checkbox" name="is_suspicious_activity"{% if v.is_suspicious_activity %} checked{% endif %}><span>Show me as Anonymous to other residents (Safety / suspicious activity only)</span></label>
+  <div class="row" style="justify-content:flex-start;margin-top:.85rem"><button class="b pr">Save changes</button><a class="b" href="{% url 'detail' x.pk %}">Cancel</a></div>
+</form>
+{% endblock %}

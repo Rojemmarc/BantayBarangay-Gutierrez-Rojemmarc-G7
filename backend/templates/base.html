@@ -1,20 +1,34 @@
 {% load static %}<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light dark">
-<title>{% block title %}BantayBarangay{% endblock %}</title><link rel="icon" type="image/png" href="{% static 'img/bantaybarangay-logo.png' %}?v=2">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#1e3a5f">
+<title>{% block title %}BantayBarangay{% endblock %}</title>
+<link rel="icon" type="image/png" href="{% static 'img/bantaybarangay-logo.png' %}?v=2">
+<link rel="manifest" href="{% static 'manifest.json' %}">
 <script src="{% static 'js/theme.js' %}"></script><link rel="stylesheet" href="{% static 'css/app.css' %}">{% block head %}{% endblock %}</head>
-<body><div id="root">
+<body><a class="skip-link" href="#mainContent">Skip to main content</a><div id="root">
 {% if user.is_authenticated %}<header class="app-header">
 <div class="brand-block"><a class="brand-name" href="{% url 'index' %}" aria-label="BantayBarangay home"><img class="brand-logo" src="{% static 'img/bantaybarangay-logo.png' %}?v=2" alt=""><span class="brand-bantay">Bantay</span><span class="brand-barangay">Barangay</span></a><span class="tag">{{ role_label }}</span></div>
 {% with n=request.resolver_match.url_name %}<nav class="main-nav" aria-label="Main navigation">
-<a href="{% url home_name %}"{% if n == home_name or n == 'detail' or n == 'new_report' or n == 'edit_report' %} class="active"{% endif %}>Home</a>
-{% if user.is_reporter or user.is_staff_member %}<a href="{% url 'alerts' %}"{% if n == 'alerts' %} class="active"{% endif %}>Alerts{% if unread %} ({{ unread }}){% endif %}</a>{% endif %}
-<a href="{% url 'bulletin' %}"{% if n == 'bulletin' %} class="active"{% endif %}>Bulletin</a></nav>{% endwith %}
+<a href="{% url home_name %}"{% if n == home_name or n == 'detail' or n == 'new_report' or n == 'edit_report' %} class="active" aria-current="page"{% endif %}>Home</a>
+{% if not user.is_lgu %}<a href="{% url 'alerts' %}"{% if n == 'alerts' %} class="active" aria-current="page"{% endif %}>Alerts{% if unread %} ({{ unread }}){% endif %}</a>{% endif %}
+<a href="{% url 'bulletin' %}"{% if n == 'bulletin' or n == 'ann_edit' %} class="active" aria-current="page"{% endif %}>Bulletin</a></nav>
 <div class="user-tools"><button type="button" class="tg" id="themeToggle" aria-label="Switch to dark mode">☾</button>
-<a class="b" href="{% url 'profile' %}">Profile</a>
-<form method="post" action="{% url 'logout' %}" data-nobusy>{% csrf_token %}<button class="b">Log out</button></form></div></header>
+<a class="b{% if n == 'profile' or n == 'change_password' %} active{% endif %}" href="{% url 'profile' %}">Profile</a>
+<form method="post" action="{% url 'logout' %}" data-nobusy>{% csrf_token %}<button class="b">Log out</button></form></div>{% endwith %}</header>
 {% else %}<button type="button" class="tg auth-theme-toggle" id="themeToggle" aria-label="Switch to dark mode">☾</button>{% endif %}
-<main class="{% block mainclass %}{% endblock %}">
-{% for m in messages %}<div class="c msg-{{ m.level_tag }}" role="status">{{ m }}</div>{% endfor %}
+<main id="mainContent" class="{% if user.is_authenticated %}with-bottom-nav {% endif %}{% block mainclass %}{% endblock %}">
+{% for m in messages %}<div class="c msg-{{ m.level_tag }}" role="status" aria-live="polite">{{ m }}</div>{% endfor %}
 {% block content %}{% endblock %}
 <footer class="app-footer mu"><p><a href="{% url 'legal' %}">Privacy · Terms · Cookies</a></p><p>Not a substitute for 911 or the barangay hotline.</p></footer></main></div>
+<dialog id="confirmModal" class="modal-dialog" aria-labelledby="confirmTitle">
+  <h2 id="confirmTitle" style="margin-top:0">Confirm action</h2>
+  <p id="confirmMessage" class="mu"></p>
+  <div class="row" style="justify-content:flex-end;margin-top:1rem">
+    <form method="dialog" style="margin:0"><button class="b" value="cancel">Cancel</button></form>
+    <button type="button" id="confirmProceed" class="b rd">Confirm</button>
+  </div>
+</dialog>
+<dialog id="photoLightbox" class="lightbox-dialog" aria-label="Photo preview">
+  <div class="row" style="justify-content:flex-end;margin-bottom:.5rem"><form method="dialog" style="margin:0"><button class="b sm">Close</button></form></div>
+  <img id="lightboxImg" src="" alt="Report photo preview">
+</dialog>
 {% block vendor %}{% endblock %}<script src="{% static 'js/app.js' %}" defer></script></body></html>
