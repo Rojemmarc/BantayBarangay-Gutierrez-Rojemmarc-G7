@@ -1,2 +1,15 @@
-<a class="c{% if x.active %} em{% endif %}" href="{% url 'detail' x.pk %}"><div class="row"><b>{% if x.is_emergency %}⚠ {% endif %}{{ x.title }}</b>{% include 'partials/badge.html' with status=x.status %}</div>
-<div class="mu">{{ x.category.name }} · {{ x.who }} · {{ x.created_at|date:"M j, Y g:i A" }}{% if x.department %} · {{ x.department.name }}{% endif %}</div></a>
+<a class="c report-card st-card-{{ x.status|slugify }}{% if x.active %} em{% endif %}" href="{% url 'detail' x.pk %}">
+  <div class="report-card-body">
+    <div class="report-card-title">{% if x.is_emergency %}⚠ {% endif %}{{ x.title }}</div>
+    <div class="report-card-meta">
+      <span>{{ x.category.name }}</span>
+      <span>· {{ x.who }}</span>
+      <span>· {{ x.created_at|date:"M j, Y g:i A" }}</span>
+      {% if x.department %}<span>· {{ x.department.name }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="report-card-side">
+    {% include 'partials/badge.html' with status=x.status %}
+    <span class="report-chevron" aria-hidden="true">›</span>
+  </div>
+</a>

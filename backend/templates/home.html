@@ -16,9 +16,18 @@
 {% if stats.emergencies %}<div class="c em"><b>⚠ {{ stats.emergencies }} active emergency report{{ stats.emergencies|pluralize }}</b></div>{% endif %}
 
 <div class="g3">
-  <div class="c"><b>{{ stats.pending }}</b><span class="mu">Pending</span></div>
-  <div class="c"><b>{{ stats.progress }}</b><span class="mu">In progress</span></div>
-  <div class="c"><b>{{ stats.resolved }}</b><span class="mu">Resolved</span></div>
+  <div class="c kpi-card kpi-pending">
+    <div><span class="kpi-label">Pending</span><b>{{ stats.pending }}</b></div>
+    <span class="kpi-icon" aria-hidden="true"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+  </div>
+  <div class="c kpi-card kpi-progress">
+    <div><span class="kpi-label">In progress</span><b>{{ stats.progress }}</b></div>
+    <span class="kpi-icon" aria-hidden="true"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg></span>
+  </div>
+  <div class="c kpi-card kpi-resolved">
+    <div><span class="kpi-label">Resolved</span><b>{{ stats.resolved }}</b></div>
+    <span class="kpi-icon" aria-hidden="true"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg></span>
+  </div>
 </div>
 
 {% if user.can_manage_reports %}
