@@ -228,12 +228,12 @@ nav a.active {
 main {
   display: flex;
   width: 100%;
-  max-width: 1120px;
+  max-width: none;
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  margin: 0 auto;
-  padding: 1.5rem 1.25rem 2.25rem;
+  margin: 0;
+  padding: 1.35rem clamp(1rem, 2.5vw, 2.5rem) 2.25rem;
 }
 
 .app-header {
@@ -244,7 +244,7 @@ main {
   align-items: center;
   gap: 0.65rem;
   margin: 0;
-  padding: 0.35rem max(1.25rem, calc((100% - 1120px) / 2));
+  padding: 0.35rem clamp(1rem, 2.5vw, 2.5rem);
 }
 
 .app-header .main-nav a {
@@ -1062,9 +1062,9 @@ form[data-busy] button:disabled { opacity: 0.6; cursor: wait; }
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.95fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
   align-items: center;
-  gap: 2rem;
+  gap: clamp(1.5rem, 3vw, 3rem);
 }
 
 .hero-copy,
@@ -1266,8 +1266,14 @@ form[data-busy] button:disabled { opacity: 0.6; cursor: wait; }
 
 .role-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.9rem;
+}
+
+@media (max-width: 1120px) {
+  .role-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  }
 }
 
 .role-card {
