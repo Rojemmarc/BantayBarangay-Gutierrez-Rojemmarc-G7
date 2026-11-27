@@ -3,7 +3,7 @@
 <title>{% block title %}BantayBarangay{% endblock %}</title>
 <link rel="icon" type="image/png" href="{% static 'img/bantaybarangay-logo.png' %}?v=2">
 <link rel="manifest" href="{% static 'manifest.json' %}">
-<script src="{% static 'js/theme.js' %}"></script><link rel="stylesheet" href="{% static 'css/app.css' %}?v=9">{% block head %}{% endblock %}</head>
+<script src="{% static 'js/theme.js' %}"></script><link rel="stylesheet" href="{% static 'css/app.css' %}?v=10">{% block head %}{% endblock %}</head>
 <body>
 <a class="skip-link" href="#mainContent">Skip to main content</a>
 <div id="navProgress" class="nav-progress" aria-hidden="true"></div>
@@ -46,7 +46,7 @@
     </form>
   </div>
 </div>{% endwith %}</header>
-{% else %}{% block guest_header %}<button type="button" class="tg auth-theme-toggle" id="themeToggle" aria-label="Switch to dark mode">☾</button>{% endblock %}{% endif %}
+{% else %}{% block guest_header %}<a class="b sm auth-back-link" href="{% url 'index' %}">← Back to home</a><button type="button" class="tg auth-theme-toggle" id="themeToggle" aria-label="Switch to dark mode">☾</button>{% endblock %}{% endif %}
 <main id="mainContent" class="{% if user.is_authenticated %}with-bottom-nav {% endif %}{% block mainclass %}{% endblock %}">
 {% for m in messages %}<div class="c msg-{{ m.level_tag }}" role="status" aria-live="polite">{{ m }}</div>{% endfor %}
 <div id="pageContent">{% block content %}{% endblock %}</div>
