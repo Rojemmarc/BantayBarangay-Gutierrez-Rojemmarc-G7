@@ -402,6 +402,12 @@ a.c:hover {
   color: var(--mu);
   font-size: 1.25rem;
   line-height: 1;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms ease;
+}
+
+.report-card:hover .report-chevron {
+  transform: translateX(4px);
+  color: var(--pt);
 }
 
 .au {
@@ -559,6 +565,7 @@ a.c:hover {
 .b:hover:not(:disabled) {
   background: var(--cd-sub);
   text-decoration: none;
+  transform: translateY(-1px);
 }
 
 .b.active {
@@ -1144,6 +1151,12 @@ form[data-busy] button:disabled { opacity: 0.6; cursor: wait; }
   background: var(--cd);
   border: 1px solid var(--bd);
   font-size: 0.85rem;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms ease;
+}
+
+.lifecycle-item:hover {
+  transform: translateX(4px);
+  border-color: var(--bd-strong);
 }
 
 .landing-metrics {
@@ -1222,6 +1235,11 @@ form[data-busy] button:disabled { opacity: 0.6; cursor: wait; }
   border-radius: 11px;
   background: var(--p-soft);
   color: var(--pt);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), background 220ms ease;
+}
+
+.feature-card:hover .ico-badge {
+  transform: translateY(-2px) scale(1.06);
 }
 
 .ico-badge.gold {
@@ -1449,6 +1467,96 @@ form[data-busy] button:disabled { opacity: 0.6; cursor: wait; }
   }
 }
 
+/* Subtle professional motion & scroll-reveal animations */
+@keyframes bbFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bbSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bbModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bbPulseDot {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(244, 168, 37, 0.55);
+  }
+  65% {
+    box-shadow: 0 0 0 6px rgba(244, 168, 37, 0);
+  }
+}
+
+.hero-copy {
+  animation: bbFadeUp 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-panel {
+  animation: bbFadeUp 600ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both;
+}
+
+.lifecycle-item {
+  animation: bbFadeUp 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.lifecycle-item:nth-child(1) { animation-delay: 140ms; }
+.lifecycle-item:nth-child(2) { animation-delay: 210ms; }
+.lifecycle-item:nth-child(3) { animation-delay: 280ms; }
+.lifecycle-item:nth-child(4) { animation-delay: 350ms; }
+
+.hero-dot {
+  animation: bbPulseDot 2.4s ease-out infinite;
+}
+
+.msg-success,
+.msg-error {
+  animation: bbSlideDown 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+dialog.modal-dialog[open],
+dialog.lightbox-dialog[open] {
+  animation: bbModalIn 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.bar-fill {
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Progressive scroll-reveal (only hidden when JS enables .js-anim) */
+.js-anim [data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 480ms cubic-bezier(0.22, 1, 0.36, 1), transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.js-anim [data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1457,6 +1565,11 @@ form[data-busy] button:disabled { opacity: 0.6; cursor: wait; }
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .js-anim [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 

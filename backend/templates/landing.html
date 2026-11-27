@@ -46,48 +46,48 @@
         <div class="lifecycle-item"><span class="bg st-resolved">Resolved</span><span class="mu">Verified closure &amp; quality rating</span></div>
       </div>
       <div class="landing-metrics">
-        <div><b>{{ metrics.barangays }}</b><span class="mu">Barangay{{ metrics.barangays|pluralize }}</span></div>
-        <div><b>{{ metrics.categories }}</b><span class="mu">Categories</span></div>
-        <div><b>{{ metrics.total_reports }}</b><span class="mu">Reports</span></div>
-        <div><b>{{ metrics.resolved_reports }}</b><span class="mu">Resolved</span></div>
+        <div><b data-count="{{ metrics.barangays }}">{{ metrics.barangays }}</b><span class="mu">Barangay{{ metrics.barangays|pluralize }}</span></div>
+        <div><b data-count="{{ metrics.categories }}">{{ metrics.categories }}</b><span class="mu">Categories</span></div>
+        <div><b data-count="{{ metrics.total_reports }}">{{ metrics.total_reports }}</b><span class="mu">Reports</span></div>
+        <div><b data-count="{{ metrics.resolved_reports }}">{{ metrics.resolved_reports }}</b><span class="mu">Resolved</span></div>
       </div>
     </div>
   </div>
 </section>
 
 <section id="features" class="landing-section">
-  <div class="section-head">
+  <div class="section-head" data-reveal>
     <span class="section-kicker">Core Capabilities</span>
     <h2>Built for fast, accountable barangay response</h2>
     <p class="mu">Everything needed to report neighborhood issues clearly, protect resident privacy, and keep communities informed.</p>
   </div>
   <div class="feature-grid">
-    <article class="c feature-card">
+    <article class="c feature-card" data-reveal data-stagger="0">
       <div class="ico-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-6-5.33-6-10a6 6 0 1 1 12 0c0 4.67-6 10-6 10z"/><circle cx="12" cy="11" r="2.5"/></svg></div>
       <h3>Photo &amp; Map Pin Evidence</h3>
       <p class="mu">Attach up to 3 JPG/PNG photos with automatic EXIF metadata stripping and pin exact locations using Leaflet maps or device GPS.</p>
     </article>
-    <article class="c feature-card">
+    <article class="c feature-card" data-reveal data-stagger="1">
       <div class="ico-badge gold" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
       <h3>Real-Time Status History</h3>
       <p class="mu">Every transition is logged with timestamps and official updates, sending in-app alerts to residents and assigned field staff.</p>
     </article>
-    <article class="c feature-card">
+    <article class="c feature-card" data-reveal data-stagger="2">
       <div class="ico-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
       <h3>Emergency Prioritization</h3>
       <p class="mu">Urgent reports are highlighted at the top of barangay queues and immediately trigger alerts for active barangay officials.</p>
     </article>
-    <article class="c feature-card">
+    <article class="c feature-card" data-reveal data-stagger="3">
       <div class="ico-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
       <h3>Privacy-First Reporting</h3>
       <p class="mu">Designed around Data Privacy Act (RA 10173) principles with barangay isolation and anonymous Safety reporting options.</p>
     </article>
-    <article class="c feature-card">
+    <article class="c feature-card" data-reveal data-stagger="4">
       <div class="ico-badge gold" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="M7 8h10M7 12h10M7 16h6"/></svg></div>
       <h3>Community Bulletin &amp; Recognition</h3>
       <p class="mu">Officials publish advisories, events, and announcements while top civic reporters earn points on the barangay leaderboard.</p>
     </article>
-    <article class="c feature-card">
+    <article class="c feature-card" data-reveal data-stagger="5">
       <div class="ico-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-8"/></svg></div>
       <h3>Anonymized LGU Analytics</h3>
       <p class="mu">Local government units review cross-barangay aggregate totals and CSV exports without exposing resident personal data.</p>
@@ -96,23 +96,23 @@
 </section>
 
 <section id="how-it-works" class="landing-section">
-  <div class="section-head">
+  <div class="section-head" data-reveal>
     <span class="section-kicker">Workflow</span>
     <h2>How it works</h2>
     <p class="mu">A clear three-step process designed for both residents on mobile phones and barangay teams in the office.</p>
   </div>
   <div class="g3 landing-steps">
-    <div class="c" style="text-align:left">
+    <div class="c" style="text-align:left" data-reveal data-stagger="0">
       <span class="step-num">1</span>
       <h3>Submit a concern</h3>
       <p class="mu">Log in, choose a category, describe the issue, attach evidence photos, and pin the location on the map.</p>
     </div>
-    <div class="c" style="text-align:left">
+    <div class="c" style="text-align:left" data-reveal data-stagger="1">
       <span class="step-num">2</span>
       <h3>Assign &amp; coordinate</h3>
       <p class="mu">Barangay officials assign the right department and active staff member while volunteers share community updates.</p>
     </div>
-    <div class="c" style="text-align:left">
+    <div class="c" style="text-align:left" data-reveal data-stagger="2">
       <span class="step-num">3</span>
       <h3>Resolve &amp; verify</h3>
       <p class="mu">Staff document the fix with comments and optional resolution proof photos, and residents review the full timeline.</p>
@@ -121,21 +121,21 @@
 </section>
 
 <section id="roles" class="landing-section">
-  <div class="section-head">
+  <div class="section-head" data-reveal>
     <span class="section-kicker">Role-Based Access</span>
     <h2>Dedicated workspaces for every role</h2>
     <p class="mu">Each account signs into a tailored dashboard with strict barangay scoping and privacy boundaries.</p>
   </div>
   <div class="role-grid">
-    <div class="c role-card"><span class="role-tag">Citizen</span><strong>Resident</strong><p class="mu">Submit, track, edit, or delete own Pending reports and receive status alerts.</p></div>
-    <div class="c role-card"><span class="role-tag">Community</span><strong>Volunteer</strong><p class="mu">Submit concerns and post community coordination updates on active barangay cases.</p></div>
-    <div class="c role-card"><span class="role-tag">Management</span><strong>Barangay Official</strong><p class="mu">Triage barangay queues, assign departments/staff, view incident maps, and export CSV summaries.</p></div>
-    <div class="c role-card"><span class="role-tag">Field Ops</span><strong>Barangay Staff</strong><p class="mu">Work from a focused assigned-case queue, update progress, and upload resolution proof.</p></div>
-    <div class="c role-card"><span class="role-tag">Oversight</span><strong>LGU Analyst</strong><p class="mu">Monitor cross-barangay aggregate breakdowns by status, category, and barangay.</p></div>
+    <div class="c role-card" data-reveal data-stagger="0"><span class="role-tag">Citizen</span><strong>Resident</strong><p class="mu">Submit, track, edit, or delete own Pending reports and receive status alerts.</p></div>
+    <div class="c role-card" data-reveal data-stagger="1"><span class="role-tag">Community</span><strong>Volunteer</strong><p class="mu">Submit concerns and post community coordination updates on active barangay cases.</p></div>
+    <div class="c role-card" data-reveal data-stagger="2"><span class="role-tag">Management</span><strong>Barangay Official</strong><p class="mu">Triage barangay queues, assign departments/staff, view incident maps, and export CSV summaries.</p></div>
+    <div class="c role-card" data-reveal data-stagger="3"><span class="role-tag">Field Ops</span><strong>Barangay Staff</strong><p class="mu">Work from a focused assigned-case queue, update progress, and upload resolution proof.</p></div>
+    <div class="c role-card" data-reveal data-stagger="4"><span class="role-tag">Oversight</span><strong>LGU Analyst</strong><p class="mu">Monitor cross-barangay aggregate breakdowns by status, category, and barangay.</p></div>
   </div>
 </section>
 
-<section class="c landing-cta">
+<section class="c landing-cta" data-reveal>
   <div>
     <h2 style="margin:0 0 .3rem">Ready to strengthen your barangay?</h2>
     <p class="mu" style="margin:0">Create a free resident account in under a minute or sign in with your barangay credentials.</p>

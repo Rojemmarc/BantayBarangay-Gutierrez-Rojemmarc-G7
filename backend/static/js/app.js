@@ -205,6 +205,47 @@
     });
   });
 
+  /* 8b. Progressive scroll-reveal & smooth metric count-up */
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var revealNodes = Array.prototype.slice.call(d.querySelectorAll('[data-reveal]'));
+  if (!reducedMotion && revealNodes.length && 'IntersectionObserver' in window) {
+    d.documentElement.classList.add('js-anim');
+    revealNodes.forEach(function (el) {
+      var idx = parseInt(el.dataset.stagger || '0', 10);
+      if (idx > 0) el.style.setProperty('--reveal-delay', Math.min(idx * 65, 360) + 'ms');
+    });
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -24px 0px' }
+    );
+    revealNodes.forEach(function (el) {
+      io.observe(el);
+    });
+  }
+
+  if (!reducedMotion) {
+    d.querySelectorAll('[data-count]').forEach(function (el) {
+      var target = parseInt(el.dataset.count, 10);
+      if (!Number.isFinite(target) || target <= 0) return;
+      var duration = 650;
+      var start = performance.now();
+      var step = function (now) {
+        var p = Math.min(1, (now - start) / duration);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = String(Math.round(target * eased));
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
   /* 9. Leaflet maps (single-pin picker / detail view + Official multi-pin overview) */
   if (window.L) {
     d.querySelectorAll('[data-map]').forEach(function (el) {
