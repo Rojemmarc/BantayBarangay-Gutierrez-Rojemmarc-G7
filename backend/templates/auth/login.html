@@ -10,6 +10,5 @@
   <div class="pw-wrap"><input id="password" name="password" type="password" autocomplete="current-password" required{% if error %} aria-invalid="true"{% endif %}><button type="button" class="pw-toggle" data-pw-toggle="password" aria-pressed="false">Show</button></div>
   {% if error %}<div class="er" role="alert">{{ error }}</div>{% endif %}
   <button class="b pr" style="width:100%;margin-top:.95rem">Log in</button>
-  <p style="text-align:center;margin:1rem 0 .25rem"><a href="{% url 'forgot' %}">Forgot password?</a> · <a href="{% url 'register' %}">Create an account</a></p>
-  <p style="text-align:center;margin:0;font-size:.85rem"><a class="mu" href="{% url 'index' %}">← Back to home</a></p>
+  <p style="text-align:center;margin:1rem 0 0"><a href="{% url 'forgot' %}">Forgot password?</a> · <a href="{% url 'register' %}">Create an account</a></p>
 </form>{% endblock %}
