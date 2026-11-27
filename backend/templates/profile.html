@@ -1,29 +1,38 @@
 {% extends 'base.html' %}
 {% block title %}My profile · BantayBarangay{% endblock %}
 {% block content %}
-<form class="c au" method="post" novalidate>
-{% csrf_token %}
-<h1>My profile</h1>
-<p class="mu">Role: <strong>{{ role_label }}</strong>{% if user.barangay %} · Barangay: <strong>{{ user.barangay }}</strong>{% endif %}</p>
-{% include 'partials/errors.html' %}
-<label for="full_name">Full name</label>
-<input id="full_name" name="full_name" value="{{ v.full_name }}" required minlength="2" maxlength="150" autocomplete="name"{% if fe.full_name %} aria-invalid="true"{% endif %}>
-{% for e in fe.full_name %}<p class="field-error">{{ e }}</p>{% endfor %}
+<div class="profile-grid">
+  <form class="c" method="post" novalidate>
+    {% csrf_token %}
+    <div class="row" style="justify-content:flex-start;gap:.85rem;margin-bottom:1rem">
+      <div class="profile-avatar" aria-hidden="true">{{ user.full_name|slice:":1"|upper }}</div>
+      <div>
+        <h1 style="margin:0">{{ user.full_name }}</h1>
+        <p class="mu" style="margin:.15rem 0 0">Role: <strong>{{ role_label }}</strong>{% if user.barangay %} · Barangay: <strong>{{ user.barangay }}</strong>{% endif %}</p>
+      </div>
+    </div>
+    {% include 'partials/errors.html' %}
+    <label for="full_name">Full name</label>
+    <input id="full_name" name="full_name" value="{{ v.full_name }}" required minlength="2" maxlength="150" autocomplete="name"{% if fe.full_name %} aria-invalid="true"{% endif %}>
+    {% for e in fe.full_name %}<p class="field-error">{{ e }}</p>{% endfor %}
 
-<label for="email">Email</label>
-<input id="email" name="email" type="email" value="{{ v.email }}" required autocomplete="email"{% if fe.email %} aria-invalid="true"{% endif %}>
-{% for e in fe.email %}<p class="field-error">{{ e }}</p>{% endfor %}
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" value="{{ v.email }}" required autocomplete="email"{% if fe.email %} aria-invalid="true"{% endif %}>
+    {% for e in fe.email %}<p class="field-error">{{ e }}</p>{% endfor %}
 
-<label for="contact_number">Contact number</label>
-<input id="contact_number" name="contact_number" value="{{ v.contact_number }}" maxlength="20" autocomplete="tel" placeholder="e.g., 09171234567"{% if fe.contact_number %} aria-invalid="true"{% endif %}>
-{% for e in fe.contact_number %}<p class="field-error">{{ e }}</p>{% endfor %}
+    <label for="contact_number">Contact number</label>
+    <input id="contact_number" name="contact_number" value="{{ v.contact_number }}" maxlength="20" autocomplete="tel" placeholder="e.g., 09171234567"{% if fe.contact_number %} aria-invalid="true"{% endif %}>
+    {% for e in fe.contact_number %}<p class="field-error">{{ e }}</p>{% endfor %}
 
-<button class="b pr" style="width:100%;margin-top:.85rem">Save profile</button>
-</form>
+    <button class="b pr" style="width:100%;margin-top:.95rem">Save profile</button>
+  </form>
 
-<div class="c au">
-  <h2 style="margin-top:0">Account security</h2>
-  <p class="mu">Keep your account protected by using a strong, unique password.</p>
-  <a class="b" href="{% url 'change_password' %}">Change password</a>
+  <aside>
+    <div class="c">
+      <h2 style="margin-top:0">Account security</h2>
+      <p class="mu">Keep your account protected with a strong, unique password. Sessions automatically time out after 30 minutes of inactivity.</p>
+      <a class="b" style="width:100%" href="{% url 'change_password' %}">Change password</a>
+    </div>
+  </aside>
 </div>
 {% endblock %}

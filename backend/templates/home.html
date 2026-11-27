@@ -2,7 +2,7 @@
 {% block title %}{% if user.can_manage_reports %}Reports dashboard{% elif user.is_staff_member %}Staff workspace{% else %}Home{% endif %} · BantayBarangay{% endblock %}
 {% block vendor %}{% if user.can_manage_reports and map_points_count %}<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}"><script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>{% endif %}{% endblock %}
 {% block content %}
-<div class="row">
+<div class="page-head">
   <div>
     <h1>{% if user.can_manage_reports %}Reports dashboard{% elif user.is_staff_member %}Assigned reports{% else %}Hello, {{ user.full_name|truncatechars:30 }}{% endif %}</h1>
     <p class="mu">{{ user.barangay }}</p>
@@ -16,9 +16,18 @@
 {% if stats.emergencies %}<div class="c em"><b>⚠ {{ stats.emergencies }} active emergency report{{ stats.emergencies|pluralize }}</b></div>{% endif %}
 
 <div class="g3">
-  <div class="c"><b>{{ stats.pending }}</b><span class="mu">Pending</span></div>
-  <div class="c"><b>{{ stats.progress }}</b><span class="mu">In progress</span></div>
-  <div class="c"><b>{{ stats.resolved }}</b><span class="mu">Resolved</span></div>
+  <div class="c kpi-card kpi-pending" data-reveal data-stagger="0">
+    <div><span class="kpi-label">Pending</span><b data-count="{{ stats.pending }}">{{ stats.pending }}</b></div>
+    <span class="kpi-icon" aria-hidden="true"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+  </div>
+  <div class="c kpi-card kpi-progress" data-reveal data-stagger="1">
+    <div><span class="kpi-label">In progress</span><b data-count="{{ stats.progress }}">{{ stats.progress }}</b></div>
+    <span class="kpi-icon" aria-hidden="true"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg></span>
+  </div>
+  <div class="c kpi-card kpi-resolved" data-reveal data-stagger="2">
+    <div><span class="kpi-label">Resolved</span><b data-count="{{ stats.resolved }}">{{ stats.resolved }}</b></div>
+    <span class="kpi-icon" aria-hidden="true"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg></span>
+  </div>
 </div>
 
 {% if user.can_manage_reports %}
@@ -68,6 +77,11 @@
     <div class="row" style="justify-content:flex-start;margin-top:.75rem"><button class="b pr">Apply filters</button></div>
   </details>
 </form>
+
+<div class="list-head">
+  <h2>{% if filtered %}Filtered reports{% else %}Reports{% endif %}</h2>
+  <span class="mu">{{ page.paginator.count }} total</span>
+</div>
 
 {% for x in page %}{% include 'partials/card.html' %}{% empty %}
 {% if filtered %}{% include 'partials/empty.html' with title='No reports found' message='Try changing your search or filters.' %}{% elif user.is_official %}{% include 'partials/empty.html' with title='No reports yet' message='There are no reports in your current work queue.' %}{% else %}{% url 'new_report' as nr %}{% include 'partials/empty.html' with title='No reports yet' message='Be the first to report an issue in your barangay.' href=nr cta='Submit a report' %}{% endif %}{% endfor %}

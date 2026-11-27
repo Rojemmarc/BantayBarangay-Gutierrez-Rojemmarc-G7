@@ -191,6 +191,10 @@ class ProUpgradesTest(TestCase):
         assert b'with-bottom-nav' in res_home
         assert b'manifest.json' in res_home
         assert b'id="confirmModal"' in res_home
+        assert b'id="pageSkeleton"' in res_home
+        assert b'id="navProgress"' in res_home
+        assert b'id="profileMenuBtn"' in res_home
+        assert b'id="profileMenu"' in res_home
         assert b'Only my reports' not in res_home  # Hidden for Residents
 
         self.client.force_login(self.vol)
@@ -209,6 +213,20 @@ class ProUpgradesTest(TestCase):
         self.client.force_login(self.lgu)
         lgu_page = self.client.get('/lgu/').content
         assert b'role="progressbar"' in lgu_page and b'Export CSV' in lgu_page
+
+    def test_public_landing_page_for_guests_and_redirect_for_authenticated(self):
+        guest = self.client.get('/')
+        assert guest.status_code == 200
+        assert b'Report barangay concerns.' in guest.content
+        assert b'href="/register/"' in guest.content and b'href="/login/"' in guest.content
+        assert b'Res Pro' not in guest.content
+
+        self.client.force_login(self.res)
+        assert self.client.get('/').url == '/app/'
+        self.client.force_login(self.off)
+        assert self.client.get('/').url == '/official/'
+        self.client.force_login(self.lgu)
+        assert self.client.get('/').url == '/lgu/'
 
 
 @override_settings(

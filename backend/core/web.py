@@ -133,7 +133,13 @@ def apply_report_filters(queryset, params, user):
 
 def index(request):
     if not request.user.is_authenticated:
-        return redirect('login')
+        metrics = {
+            'barangays': Barangay.objects.count(),
+            'categories': Category.objects.count(),
+            'total_reports': Report.objects.count(),
+            'resolved_reports': Report.objects.filter(status='Resolved').count(),
+        }
+        return render(request, 'landing.html', {'metrics': metrics})
     if request.user.is_lgu:
         return redirect('lgu_dashboard')
     return redirect('official' if request.user.is_official else 'app')
